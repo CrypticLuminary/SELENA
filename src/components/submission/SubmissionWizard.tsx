@@ -11,13 +11,12 @@ import {
   submissionSchema,
   type SubmissionForm,
 } from "@/lib/submission-schema";
+import type { AgeGroup, ExperienceType, Setting } from "@/data/categories";
 import type {
-  AgeGroup,
-  ExperienceType,
-  Relationship,
-  Setting,
-} from "@/data/categories";
-import type { PublicationChoice, Submission } from "@/types/submission";
+  Frequency,
+  PublicationChoice,
+  Submission,
+} from "@/types/submission";
 import { submitStory } from "@/lib/mock-api";
 import { Button } from "@/components/ui/button";
 import { Callout } from "@/components/ui/callout";
@@ -39,9 +38,11 @@ const STEP_TITLES = [
 function toSubmission(v: SubmissionForm): Submission {
   return {
     ageGroup: v.ageGroup as AgeGroup,
-    relationship: v.relationship as Relationship,
     setting: v.setting as Setting,
     experienceTypes: v.experienceTypes as ExperienceType[],
+    peopleInvolved: v.peopleInvolved,
+    frequency: v.frequency as Frequency,
+    periods: v.periods,
     storyText: v.storyText,
     publicationChoice: v.publicationChoice as PublicationChoice,
     consentPublish: v.consentPublish,

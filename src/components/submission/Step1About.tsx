@@ -1,7 +1,7 @@
 "use client";
 
 import { Controller, useFormContext } from "react-hook-form";
-import { AGE_GROUPS, RELATIONSHIPS, SETTINGS } from "@/data/categories";
+import { AGE_GROUPS, SETTINGS } from "@/data/categories";
 import type { SubmissionForm } from "@/lib/submission-schema";
 import { RadioGroup } from "@/components/ui/radio-group";
 import { FieldError } from "@/components/ui/field-error";
@@ -19,8 +19,8 @@ function Field({
 }) {
   return (
     <fieldset>
-      <legend className="text-base font-semibold text-ink">{label}</legend>
-      {help ? <p className="mt-1 text-sm text-ink-soft">{help}</p> : null}
+      <legend className="font-serif text-card text-ink">{label}</legend>
+      {help ? <p className="mt-1 text-ui text-ink-soft">{help}</p> : null}
       <div className="mt-3">{children}</div>
       <FieldError message={error} />
     </fieldset>
@@ -34,10 +34,12 @@ export function Step1About() {
   } = useFormContext<SubmissionForm>();
 
   return (
-    <div className="space-y-8">
-      <p className="text-sm text-ink-soft">
-        A few broad questions. There are no exact ages, dates, or locations —
-        only wide categories.
+    <div className="space-y-10">
+      <p className="text-ui text-ink-soft">
+        A little broad context to begin with. There are no exact ages, dates, or
+        locations here — only wide categories, and you can say &ldquo;prefer not
+        to say&rdquo; to anything. You&rsquo;ll describe who was involved on the
+        next step.
       </p>
 
       <Field
@@ -59,29 +61,7 @@ export function Step1About() {
         />
       </Field>
 
-      <Field
-        label="What was the relationship or context?"
-        error={errors.relationship?.message}
-      >
-        <Controller
-          control={control}
-          name="relationship"
-          render={({ field }) => (
-            <RadioGroup
-              name="relationship"
-              options={RELATIONSHIPS}
-              value={field.value}
-              onChange={field.onChange}
-              columns={2}
-            />
-          )}
-        />
-      </Field>
-
-      <Field
-        label="Where did it happen?"
-        error={errors.setting?.message}
-      >
+      <Field label="Where did it happen?" error={errors.setting?.message}>
         <Controller
           control={control}
           name="setting"

@@ -42,6 +42,10 @@
     -webkit-text-size-adjust: 100%;
     scroll-behavior: smooth;
     font-family: var(--font-geist-sans), system-ui, sans-serif;
+    /* Never allow horizontal page scroll on small screens. `clip` (not
+       `hidden`) does NOT create a scroll container, so the sticky header keeps
+       working. Note: native <select> menus are OS-drawn and unaffected. */
+    overflow-x: clip;
   }
 
   body {
@@ -50,6 +54,7 @@
     line-height: 1.65;
     text-rendering: optimizeLegibility;
     font-feature-settings: "cv01";
+    overflow-x: clip;
   }
 
   /* Editorial headings: serif, hierarchy from size/weight/spacing — not blanket bold. */

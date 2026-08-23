@@ -72,12 +72,14 @@ export type Relationship = (typeof RELATIONSHIPS)[number]["value"];
 
 export const SETTINGS = [
   { value: "home", label: "Home / private residence" },
+  { value: "family_gathering", label: "Family gathering" },
   { value: "workplace", label: "Workplace" },
   { value: "school", label: "School / college" },
   { value: "public_transport", label: "Public transport" },
   { value: "public_place", label: "Public place" },
   { value: "online", label: "Online" },
   { value: "social_gathering", label: "Social gathering" },
+  { value: "religious_community", label: "Religious / community setting" },
   { value: "other", label: "Other" },
   { value: "prefer_not", label: "Prefer not to say" },
 ] as const satisfies readonly CategoryOption[];
@@ -162,3 +164,139 @@ export const PATTERN_DIMENSIONS = [
 ] as const;
 
 export type PatternDimension = (typeof PATTERN_DIMENSIONS)[number]["value"];
+
+/* ================================================================== */
+/* PEOPLE INVOLVED — optional, hierarchical structured context.        */
+/*                                                                    */
+/* This vocabulary is SEPARATE from the flat RELATIONSHIPS above,      */
+/* which stays the source of truth for stories & pattern aggregation. */
+/* Everything here is optional; every field offers "prefer not to say".*/
+/* ================================================================== */
+
+/** Top-level relationship categories. Selecting one may reveal a detail list. */
+export const PERSON_RELATIONSHIP_CATEGORIES = [
+  { value: "family", label: "Family" },
+  { value: "partner", label: "Partner / romantic relationship" },
+  { value: "friend_acquaintance", label: "Friend / acquaintance" },
+  { value: "authority", label: "Authority / professional" },
+  { value: "stranger", label: "Stranger" },
+  { value: "online", label: "Online / digital contact" },
+  { value: "other", label: "Other" },
+  { value: "prefer_not", label: "Prefer not to say" },
+] as const satisfies readonly CategoryOption[];
+
+export type PersonRelationshipCategory =
+  (typeof PERSON_RELATIONSHIP_CATEGORIES)[number]["value"];
+
+/**
+ * Second-level detail, revealed contextually per top-level category. Categories
+ * not listed here (stranger, online, friend/acquaintance, other, prefer_not)
+ * have no second level — the top level is enough.
+ */
+export const PERSON_RELATIONSHIP_DETAILS: Record<
+  string,
+  readonly CategoryOption[]
+> = {
+  family: [
+    { value: "parent", label: "Parent" },
+    { value: "stepparent", label: "Stepparent" },
+    { value: "sibling", label: "Sibling" },
+    { value: "half_sibling", label: "Half-sibling" },
+    { value: "grandparent", label: "Grandparent" },
+    { value: "uncle", label: "Uncle" },
+    { value: "aunt", label: "Aunt" },
+    { value: "cousin", label: "Cousin" },
+    { value: "nephew_niece", label: "Nephew / niece" },
+    { value: "child", label: "Child" },
+    { value: "other_relative", label: "Other relative" },
+    { value: "extended_family", label: "Extended family" },
+    { value: "prefer_not", label: "Prefer not to say" },
+  ],
+  partner: [
+    { value: "spouse", label: "Spouse" },
+    { value: "current_partner", label: "Current partner" },
+    { value: "former_partner", label: "Former partner" },
+    { value: "dating_partner", label: "Dating partner" },
+    { value: "former_dating_partner", label: "Former dating partner" },
+    { value: "other", label: "Other" },
+    { value: "prefer_not", label: "Prefer not to say" },
+  ],
+  authority: [
+    { value: "teacher", label: "Teacher" },
+    { value: "professor", label: "Professor / lecturer" },
+    { value: "employer_supervisor", label: "Employer / supervisor" },
+    { value: "coworker", label: "Coworker" },
+    { value: "healthcare_worker", label: "Healthcare worker" },
+    { value: "religious_leader", label: "Religious / community leader" },
+    { value: "police_security", label: "Police / security" },
+    { value: "other_authority", label: "Other authority figure" },
+    { value: "prefer_not", label: "Prefer not to say" },
+  ],
+};
+
+/** How the person was involved. */
+export const INVOLVEMENT_OPTIONS = [
+  { value: "primary", label: "Primarily involved" },
+  { value: "sometimes", label: "Sometimes involved" },
+  { value: "prefer_not", label: "I don't want to say" },
+] as const satisfies readonly CategoryOption[];
+
+/** Approximate age of the person involved (may be unknown). */
+export const PERSON_AGE_BANDS = [
+  { value: "under_13", label: "Under 13" },
+  { value: "13_17", label: "13–17" },
+  { value: "18_24", label: "18–24" },
+  { value: "25_34", label: "25–34" },
+  { value: "35_44", label: "35–44" },
+  { value: "45_54", label: "45–54" },
+  { value: "55_plus", label: "55+" },
+  { value: "dont_know", label: "I don't know" },
+  { value: "prefer_not", label: "Prefer not to say" },
+] as const satisfies readonly CategoryOption[];
+
+/** How often the experience happened. */
+export const FREQUENCY_OPTIONS = [
+  { value: "once", label: "Once" },
+  { value: "more_than_once", label: "More than once" },
+  { value: "repeated_period", label: "Repeatedly over a period of time" },
+  { value: "unsure", label: "I'm not sure" },
+  { value: "prefer_not", label: "Prefer not to say" },
+] as const satisfies readonly CategoryOption[];
+
+/* Lookup helpers for the person vocabulary (used by the review step).
+   Built directly as Record<string, string> so string-keyed lookups are safe. */
+function flatLabels(
+  options: readonly CategoryOption[],
+): Record<string, string> {
+  return options.reduce<Record<string, string>>((acc, o) => {
+    acc[o.value] = o.label;
+    return acc;
+  }, {});
+}
+
+const PERSON_CATEGORY_LABELS = flatLabels(PERSON_RELATIONSHIP_CATEGORIES);
+const INVOLVEMENT_LABELS = flatLabels(INVOLVEMENT_OPTIONS);
+const PERSON_AGE_LABELS = flatLabels(PERSON_AGE_BANDS);
+const FREQUENCY_LABELS = flatLabels(FREQUENCY_OPTIONS);
+const PERSON_DETAIL_LABELS: Record<string, string> = Object.values(
+  PERSON_RELATIONSHIP_DETAILS,
+).reduce<Record<string, string>>((acc, list) => {
+  for (const o of list) acc[o.value] = o.label;
+  return acc;
+}, {});
+
+export function personRelationshipCategoryLabel(value: string): string {
+  return PERSON_CATEGORY_LABELS[value] ?? value;
+}
+export function personRelationshipDetailLabel(value: string): string {
+  return PERSON_DETAIL_LABELS[value] ?? value;
+}
+export function involvementLabel(value: string): string {
+  return INVOLVEMENT_LABELS[value] ?? value;
+}
+export function personAgeBandLabel(value: string): string {
+  return PERSON_AGE_LABELS[value] ?? value;
+}
+export function frequencyLabel(value: string): string {
+  return FREQUENCY_LABELS[value] ?? value;
+}
