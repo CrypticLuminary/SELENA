@@ -1,0 +1,124 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+  SELENA design tokens — paper + ink + muted botanical accent.
+  RGB channel triplets so Tailwind can apply opacity via rgb(var(--token)/<alpha>).
+  Light-only by intent: the palette is intrinsically a warm-paper system.
+*/
+:root {
+  /* Surfaces — warm neutrals */
+  --canvas: 247 245 240; /* #F7F5F0 page ground */
+  --surface: 252 251 248; /* #FCFBF8 raised / cards */
+  --surface-muted: 241 238 231; /* #F1EEE7 subtle fill */
+
+  /* Ink — warm charcoal */
+  --ink: 41 43 41; /* #292B29 primary text */
+  --ink-soft: 95 98 93; /* #5F625D secondary text */
+  --ink-faint: 108 111 104; /* #6C6F68 — darkened from #777A73 to clear AA (4.69 on canvas) */
+
+  /* Lines */
+  --line: 221 217 208; /* #DDD9D0 hairline borders */
+  --line-strong: 207 201 188; /* #CFC9BC */
+
+  /* Accent — muted teal */
+  --accent: 45 94 85; /* #2D5E55 */
+  --accent-deep: 33 73 65; /* #214941 hover / pressed / accent headings */
+  --accent-soft: 231 239 236; /* #E7EFEC teal surface */
+  --accent-contrast: 252 251 248; /* text on accent */
+
+  /* Caution — warm ochre, never alarm-red */
+  --caution: 142 95 31; /* #8E5F1F — darkened from #966421 to clear AA on caution-soft (4.67) */
+  --caution-soft: 244 235 221; /* #F4EBDD */
+}
+
+@layer base {
+  * {
+    @apply border-line;
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+    scroll-behavior: smooth;
+    font-family: var(--font-geist-sans), system-ui, sans-serif;
+  }
+
+  body {
+    @apply bg-canvas text-ink antialiased;
+    font-size: 1.0625rem;
+    line-height: 1.65;
+    text-rendering: optimizeLegibility;
+    font-feature-settings: "cv01";
+  }
+
+  /* Editorial headings: serif, hierarchy from size/weight/spacing — not blanket bold. */
+  h1, h2, h3, h4 {
+    @apply font-serif text-ink;
+    font-weight: 500;
+    letter-spacing: -0.012em;
+    text-wrap: balance;
+  }
+
+  /* Visible, consistent focus for keyboard users (SVG bubbles handle their own). */
+  :where(a, button, input, select, textarea, [tabindex]):focus-visible {
+    @apply outline-none ring-2 ring-accent ring-offset-2 ring-offset-canvas;
+    border-radius: 0.375rem;
+  }
+
+  p {
+    text-wrap: pretty;
+  }
+
+  ::selection {
+    background: rgb(var(--accent-soft));
+  }
+}
+
+@layer components {
+  /* Long-form prose for content pages (About, Methodology). */
+  .prose-selena {
+    @apply text-ink-soft;
+    line-height: 1.72;
+  }
+  .prose-selena p {
+    @apply mb-4;
+    max-width: 42rem;
+  }
+  .prose-selena p:last-child {
+    @apply mb-0;
+  }
+
+  /* Story reading column — the most editorial text in the app. */
+  .prose-story {
+    @apply text-ink;
+    font-size: 1.1rem;
+    line-height: 1.85;
+  }
+  .prose-story p {
+    @apply mb-6;
+  }
+  .prose-story p:last-child {
+    @apply mb-0;
+  }
+
+  /* A quiet editorial eyebrow. */
+  .eyebrow {
+    @apply font-sans uppercase text-accent;
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+  }
+}
+
+/* Respect reduced motion everywhere (framer-motion also honors it). */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
