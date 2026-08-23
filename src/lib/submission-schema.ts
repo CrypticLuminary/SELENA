@@ -39,8 +39,11 @@ export const submissionSchema = z
       .max(MAX_STORY, `Please keep your story under ${MAX_STORY} characters.`),
     publicationChoice: z
       .string()
+      // Explicit `: boolean` return so TS 5.5+ does NOT infer a type predicate
+      // here — that would narrow this field's type away from `string` (via Zod's
+      // refine overload) and reject the "" default below.
       .refine(
-        (v) => v === "public" || v === "statistics_only",
+        (v): boolean => v === "public" || v === "statistics_only",
         "Please choose how you'd like to share.",
       ),
     consentPublish: z.boolean(),
