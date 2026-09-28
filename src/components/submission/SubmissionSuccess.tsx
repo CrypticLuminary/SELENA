@@ -20,6 +20,9 @@ export function SubmissionSuccess() {
     try {
       const raw = sessionStorage.getItem(RESULT_KEY);
       if (raw) {
+        // This one-time effect intentionally synchronizes React with ephemeral
+        // browser storage used only by the synthetic demo confirmation flow.
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setResult(JSON.parse(raw) as Result);
         sessionStorage.removeItem(RESULT_KEY);
       }
