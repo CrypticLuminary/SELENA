@@ -11,10 +11,9 @@ function leaveNow() {
   try {
     // Replace the current history entry so this page is harder to reach via Back.
     window.location.replace(SAFE_URL);
-    // Best-effort: also blank the referrer-visible URL if replace is slow.
-    window.location.href = SAFE_URL;
   } catch {
-    window.location.href = SAFE_URL;
+    // Fallback only if replace is unavailable/fails.
+    window.location.assign(SAFE_URL);
   }
 }
 
