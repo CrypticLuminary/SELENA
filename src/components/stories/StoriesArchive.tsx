@@ -23,7 +23,6 @@ export function StoriesArchive({
 
   useEffect(() => {
     let active = true;
-    setStatus("loading");
     getStories(filters)
       .then((result) => {
         if (!active) return;
@@ -40,7 +39,13 @@ export function StoriesArchive({
 
   return (
     <div className="mt-8">
-      <StoryControls filters={filters} onChange={setFilters} />
+      <StoryControls
+        filters={filters}
+        onChange={(next) => {
+          setStatus("loading");
+          setFilters(next);
+        }}
+      />
 
       <div className="mt-6" aria-live="polite">
         {status === "loading" ? (
@@ -54,7 +59,10 @@ export function StoriesArchive({
         ) : status === "error" ? (
           <ErrorState
             title="We couldn't load these experiences right now."
-            onRetry={() => setReloadKey((k) => k + 1)}
+            onRetry={() => {
+              setStatus("loading");
+              setReloadKey((k) => k + 1);
+            }}
           />
         ) : stories.length === 0 ? (
           <EmptyState
