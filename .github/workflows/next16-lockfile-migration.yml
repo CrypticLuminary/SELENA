@@ -1,0 +1,57 @@
+name: One-time Next.js 16 lockfile migration
+
+on:
+  push:
+    branches: [phase-1-production-audit]
+    paths:
+      - ".github/workflows/next16-lockfile-migration.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  migrate-and-validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout migration branch
+        uses: actions/checkout@v4
+        with:
+          ref: phase-1-production-audit
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Regenerate lockfile for declared secure dependency baseline
+        run: npm install
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Privacy boundary guard
+        run: npm run check:privacy
+
+      - name: Production build
+        run: npm run build
+
+      - name: Production dependency audit
+        run: npm run audit:prod
+
+      - name: Commit validated lockfile
+        run: |
+          if git diff --quiet -- package.json package-lock.json; then
+            echo "No dependency metadata changes to commit."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add package.json package-lock.json
+          git commit -m "build: regenerate lockfile for Next.js 16"
+          git push
