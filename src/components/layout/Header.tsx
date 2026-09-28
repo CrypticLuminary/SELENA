@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Menu, X } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { PRIMARY_NAV, SECONDARY_NAV } from "./nav-links";
 import { QuickExit } from "./QuickExit";
@@ -46,9 +46,6 @@ export function Header() {
   const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
 
-  useEffect(() => {
-    setMenuOpen(false);
-  }, [pathname]);
 
   const isActive = (href: string) =>
     pathname === href || pathname.startsWith(href + "/");
