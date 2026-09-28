@@ -83,6 +83,7 @@ export function RelationshipBubbles({
         }
       />
       <CategoryDetailSheet
+        key={selected ?? "closed"}
         relationshipValue={selected}
         relationshipLabel={selectedLabel}
         onClose={() => setSelected(null)}
