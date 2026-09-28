@@ -12,12 +12,17 @@ function first(value: string | string[] | undefined): string | undefined {
   return Array.isArray(value) ? value[0] : value;
 }
 
-export default function PatternsPage({
+type PatternSearchParams = Promise<{
+  [key: string]: string | string[] | undefined;
+}>;
+
+export default async function PatternsPage({
   searchParams,
 }: {
-  searchParams: { [key: string]: string | string[] | undefined };
+  searchParams: PatternSearchParams;
 }) {
-  const initialRelationship = first(searchParams.relationship);
+  const query = await searchParams;
+  const initialRelationship = first(query.relationship);
 
   return (
     <div>
