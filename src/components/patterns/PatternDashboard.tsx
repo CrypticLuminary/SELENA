@@ -23,7 +23,6 @@ export function PatternDashboard({
 
   useEffect(() => {
     let active = true;
-    setStatus("loading");
     getSnapshot()
       .then((s) => {
         if (!active) return;
@@ -59,7 +58,10 @@ export function PatternDashboard({
       <div className="mt-8">
         <ErrorState
           title="We couldn't load these patterns right now."
-          onRetry={() => setReloadKey((k) => k + 1)}
+          onRetry={() => {
+            setStatus("loading");
+            setReloadKey((k) => k + 1);
+          }}
         />
       </div>
     );
