@@ -49,7 +49,6 @@ export function PatternFilters() {
   useEffect(() => {
     if (!category) return;
     let active = true;
-    setStatus("loading");
     getCrossBreakdown("relationship", secondary, category).then((r) => {
       if (!active) return;
       setResult(r);
@@ -76,7 +75,10 @@ export function PatternFilters() {
           <span className="mb-2 block eyebrow">Explore by relationship</span>
           <Select
             value={category}
-            onChange={(e) => setCategory(e.target.value)}
+            onChange={(e) => {
+              setStatus("loading");
+              setCategory(e.target.value);
+            }}
           >
             {options.map((o) => (
               <option key={o.value} value={o.value}>
@@ -90,7 +92,10 @@ export function PatternFilters() {
           <span className="mb-2 block eyebrow">Compared with</span>
           <Select
             value={secondary}
-            onChange={(e) => setSecondary(e.target.value as Secondary)}
+            onChange={(e) => {
+              setStatus("loading");
+              setSecondary(e.target.value as Secondary);
+            }}
           >
             {SECONDARIES.map((s) => (
               <option key={s.value} value={s.value}>
