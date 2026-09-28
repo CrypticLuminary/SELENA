@@ -5,10 +5,14 @@ import { X } from "lucide-react";
 import { useEffect, useId, useRef } from "react";
 import { cn } from "@/lib/utils";
 
+const FOCUSABLE =
+  'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
 /**
  * Responsive modal: a bottom sheet on small screens, a centered dialog on
  * larger ones. Accessible: role="dialog", aria-modal, Escape to close,
- * backdrop click to close, body scroll lock, initial focus, focus restore.
+ * backdrop click to close, body scroll lock, focus trap, initial focus,
+ * and focus restore.
  */
 export function BottomSheet({
   open,
@@ -30,17 +34,52 @@ export function BottomSheet({
 
   useEffect(() => {
     if (!open) return;
+
     restoreRef.current = document.activeElement as HTMLElement | null;
     const prevOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
 
-    function onKey(e: KeyboardEvent) {
-      if (e.key === "Escape") onClose();
+    function focusableElements() {
+      return Array.from(
+        panelRef.current?.querySelectorAll<HTMLElement>(FOCUSABLE) ?? [],
+      ).filter((el) => !el.hasAttribute("hidden"));
     }
+
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        onClose();
+        return;
+      }
+
+      if (e.key !== "Tab") return;
+
+      const items = focusableElements();
+      if (items.length === 0) {
+        e.preventDefault();
+        panelRef.current?.focus();
+        return;
+      }
+
+      const first = items[0];
+      const last = items[items.length - 1];
+      const active = document.activeElement;
+
+      if (e.shiftKey && (active === first || active === panelRef.current)) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && active === last) {
+        e.preventDefault();
+        first.focus();
+      }
+    }
+
     document.addEventListener("keydown", onKey);
 
-    // Move focus into the dialog.
-    const t = window.setTimeout(() => panelRef.current?.focus(), 0);
+    const t = window.setTimeout(() => {
+      const first = focusableElements()[0];
+      (first ?? panelRef.current)?.focus();
+    }, 0);
 
     return () => {
       document.removeEventListener("keydown", onKey);
