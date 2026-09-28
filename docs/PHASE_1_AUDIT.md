@@ -57,6 +57,11 @@ No `dangerouslySetInnerHTML` use found.
 ### S5 — Positive — no direct production network layer exists yet
 No real `fetch()` calls exist outside documentation; the current app remains fully synthetic.
 
+### S6 — CI repository-setting prerequisite found
+The official GitHub Dependency Review action was tested on the Phase 1 PR and failed because this repository's GitHub Dependency Graph is disabled.
+
+This is not an application-code vulnerability. The failing workflow was removed rather than made optional/allowed-to-fail. Before production, enable Dependency Graph in repository security settings and restore Dependency Review as a required PR gate. Until then, the frontend CI still runs a high/critical production `npm audit`, and CodeQL remains enabled.
+
 ## Privacy findings
 
 ### P1 — Positive — story drafts stay in memory
@@ -120,14 +125,16 @@ For Phase 1, lint + typecheck + build + security/privacy checks establish a repe
 
 - frontend quality/security workflow
 - CodeQL workflow
-- dependency-review workflow
+- npm high/critical production dependency audit
 - npm + GitHub Actions Dependabot
 - privacy-boundary invariant check
 - pull-request review checklist
 - security reporting guidance
 
+GitHub Dependency Review is intentionally tracked as pending until Dependency Graph is enabled; it is not being simulated with a fake green check.
+
 ## Exit assessment
 
 Phase 1 is **not allowed to be declared complete while the Next.js dependency blocker remains**.
 
-Everything else in the current Phase 1 scope can be completed and checked independently. After the framework upgrade PR is generated/applied, rerun all workflows and perform one final self-review.
+Everything else in the current Phase 1 scope can be completed and checked independently. After the framework upgrade and repository Dependency Graph enablement, rerun all workflows and perform one final self-review.
