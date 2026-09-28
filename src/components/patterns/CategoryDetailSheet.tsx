@@ -39,8 +39,6 @@ export function CategoryDetailSheet({
   useEffect(() => {
     if (!relationshipValue) return;
     let active = true;
-    setStatus("loading");
-    setData(null);
     Promise.all(
       SECONDARIES.map((s) =>
         getCrossBreakdown("relationship", s, relationshipValue),
@@ -73,7 +71,12 @@ export function CategoryDetailSheet({
           <ChartSkeleton rows={5} />
         </div>
       ) : status === "error" ? (
-        <ErrorState onRetry={() => setReloadKey((k) => k + 1)} />
+        <ErrorState
+          onRetry={() => {
+            setStatus("loading");
+            setReloadKey((k) => k + 1);
+          }}
+        />
       ) : data ? (
         <div className="space-y-5">
           {SECONDARIES.map((key) => {
