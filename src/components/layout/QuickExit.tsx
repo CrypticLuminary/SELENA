@@ -18,6 +18,27 @@ function leaveNow() {
 }
 
 /**
+ * Mount exactly once near the application root. Visible QuickExit buttons are
+ * intentionally listener-free so multiple buttons do not register duplicate
+ * global keyboard handlers.
+ */
+export function QuickExitHotkey() {
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (e.shiftKey && e.key === "Escape") {
+        e.preventDefault();
+        leaveNow();
+      }
+    }
+
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+
+  return null;
+}
+
+/**
  * Quick Exit — a persistent "Leave this site" control.
  *
  * Note: this reduces the chance a page lingers in Back history, but it cannot
@@ -31,19 +52,6 @@ export function QuickExit({
   className?: string;
   label?: string;
 }) {
-  useEffect(() => {
-    // Optional hotkey: Shift+Escape. Chosen over plain Escape so it doesn't
-    // collide with closing dialogs/menus, and to avoid accidental exits.
-    function onKey(e: KeyboardEvent) {
-      if (e.shiftKey && e.key === "Escape") {
-        e.preventDefault();
-        leaveNow();
-      }
-    }
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, []);
-
   return (
     <button
       type="button"
