@@ -18,14 +18,15 @@
 - [x] Check current Next.js security advisories.
 - [x] Add production dependency audit to CI.
 - [x] Add CodeQL.
-- [x] Add dependency-review workflow.
+- [x] Attempt GitHub Dependency Review; self-review found repository Dependency Graph is disabled, so the unsupported failing workflow was removed rather than ignored.
 - [x] Add Dependabot for npm and GitHub Actions.
 - [x] Add repository security reporting guidance.
+- [ ] Enable GitHub Dependency Graph in repository settings, then add official Dependency Review back as a required PR gate.
 - [ ] Upgrade Next.js/React stack to a currently patched supported line and regenerate lockfile.
 - [ ] Re-run all CI after dependency upgrade.
 
 **Exit:** all high/critical production dependency findings resolved.  
-**Current blocker:** framework upgrade required; do not waive this gate.
+**Current blockers:** framework upgrade; Dependency Graph setting for GitHub Dependency Review.
 
 ## P1.3 — Privacy and sensitive-data audit
 - [x] Confirm story drafts are not persisted to localStorage.
@@ -61,28 +62,30 @@
 ## P1.6 — Repeatable CI and review gates
 - [x] Add frontend CI for clean install, lint, typecheck, privacy guardrail, build, and production dependency audit.
 - [x] Add CodeQL security analysis.
-- [x] Add dependency review.
 - [x] Add Dependabot.
 - [x] Add PR security/privacy/accessibility checklist.
 - [x] Use least-privilege workflow permissions.
+- [ ] Add GitHub Dependency Review after Dependency Graph is enabled.
 
-**Exit:** every PR gets repeatable quality/security checks.
+**Exit:** every PR gets repeatable quality/security checks; dependency-change review is tracked as a repository-setting prerequisite.
 
 ## P1.7 — Self-review / exit evaluation
 - [x] Re-check changes for DRY/KISS/YAGNI.
 - [x] Re-check privacy/security boundaries.
 - [x] Re-check accessibility changes.
 - [x] Re-check that CI does not hide dependency vulnerabilities.
-- [ ] Confirm CI results on GitHub.
+- [x] Remove a CI check that could not function rather than marking it allowed-to-fail.
+- [ ] Confirm remaining CI results on GitHub.
 - [ ] Resolve dependency-upgrade blocker.
-- [ ] Mark Phase 1 complete only after the blocker is resolved and checks pass.
+- [ ] Enable Dependency Graph / restore Dependency Review.
+- [ ] Mark Phase 1 complete only after blockers are resolved and checks pass.
 
 ## Phase 1 definition of done
 Phase 1 is complete when:
 1. the audit report is current;
 2. no known critical/high dependency issue remains intentionally unresolved;
 3. lint/typecheck/build/privacy checks pass;
-4. CodeQL/dependency review are configured;
+4. CodeQL is configured and GitHub Dependency Review is enabled once repository support is available;
 5. modal keyboard behavior is safe;
 6. security headers are present;
 7. remaining risks are explicitly tracked rather than silently accepted.
