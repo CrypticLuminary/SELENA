@@ -135,6 +135,9 @@ def test_statistics_only_requires_explicit_statistics_consent(client):
         publication_consent=False,
         statistics_consent=False,
         story_text="",
+        people_involved=[],
+        frequency="",
+        periods=[],
     )
 
     response = client.post(
@@ -148,12 +151,22 @@ def test_statistics_only_requires_explicit_statistics_consent(client):
 
 
 @pytest.mark.django_db
-def test_statistics_only_can_submit_without_story_text(client):
+def test_statistics_only_can_submit_only_approved_aggregate_fields(client):
     payload = public_payload(
         publication_choice="statistics_only",
         publication_consent=False,
         statistics_consent=True,
         story_text="",
+        people_involved=[
+            {
+                "relationship_category": "authority",
+                "relationship_detail": "",
+                "involvement": "",
+                "age_band": "",
+            }
+        ],
+        frequency="",
+        periods=[],
     )
 
     response = client.post(
@@ -163,7 +176,88 @@ def test_statistics_only_can_submit_without_story_text(client):
     )
 
     assert response.status_code == 201
-    assert RawSubmission.objects.get().story_text == ""
+    submission = RawSubmission.objects.get()
+    assert submission.story_text == ""
+    assert submission.frequency == ""
+    assert submission.periods == []
+    assert submission.people_involved == [
+        {
+            "relationship_category": "authority",
+            "relationship_detail": "",
+            "involvement": "",
+            "age_band": "",
+        }
+    ]
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize(
+    "overrides",
+    [
+        {"frequency": "more_than_once"},
+        {"periods": [{"start_age_band": "21_24", "end_age_band": "21_24"}]},
+        {
+            "people_involved": [
+                {
+                    "relationship_category": "authority",
+                    "relationship_detail": "employer_supervisor",
+                    "involvement": "",
+                    "age_band": "",
+                }
+            ]
+        },
+        {
+            "people_involved": [
+                {
+                    "relationship_category": "authority",
+                    "relationship_detail": "",
+                    "involvement": "primary",
+                    "age_band": "",
+                }
+            ]
+        },
+        {
+            "people_involved": [
+                {
+                    "relationship_category": "authority",
+                    "relationship_detail": "",
+                    "involvement": "",
+                    "age_band": "35_44",
+                }
+            ]
+        },
+    ],
+)
+def test_statistics_only_rejects_fields_outside_approved_statistics_purpose(
+    client,
+    overrides,
+):
+    payload = public_payload(
+        publication_choice="statistics_only",
+        publication_consent=False,
+        statistics_consent=True,
+        story_text="",
+        people_involved=[
+            {
+                "relationship_category": "authority",
+                "relationship_detail": "",
+                "involvement": "",
+                "age_band": "",
+            }
+        ],
+        frequency="",
+        periods=[],
+    )
+    payload.update(overrides)
+
+    response = client.post(
+        reverse("submission-create"),
+        data=payload,
+        content_type="application/json",
+    )
+
+    assert response.status_code == 400
+    assert RawSubmission.objects.count() == 0
 
 
 @pytest.mark.django_db
@@ -173,6 +267,9 @@ def test_statistics_only_rejects_story_text_to_minimize_private_data(client):
         publication_consent=False,
         statistics_consent=True,
         story_text="This narrative must not be stored on the statistics-only path.",
+        people_involved=[],
+        frequency="",
+        periods=[],
     )
 
     response = client.post(

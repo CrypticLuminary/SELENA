@@ -1,17 +1,12 @@
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
-import {
-  ageGroupLabel,
-  personRelationshipCategoryLabel,
-  settingLabel,
-} from "@/data/categories";
-import type { Story } from "@/types/story";
+import type { StorySummary } from "@/types/story";
 
 /**
  * "You may also want to explore" — related by BROAD categories only.
  * Never framed as "people exactly like you."
  */
-export function RelatedStories({ stories }: { stories: Story[] }) {
+export function RelatedStories({ stories }: { stories: StorySummary[] }) {
   if (stories.length === 0) return null;
 
   return (
@@ -20,7 +15,7 @@ export function RelatedStories({ stories }: { stories: Story[] }) {
         You may also want to explore
       </h2>
       <p className="mt-1 text-sm text-ink-soft">
-        Other anonymous experiences that share a broad category with this one.
+        Other privacy-reviewed experiences from the public archive.
       </p>
       <ul className="mt-5 grid gap-3 sm:grid-cols-3">
         {stories.map((story) => (
@@ -33,8 +28,7 @@ export function RelatedStories({ stories }: { stories: Story[] }) {
                 {story.alias}
               </span>
               <span className="mt-1 text-xs text-ink-faint">
-                {ageGroupLabel(story.ageGroup)} · {personRelationshipCategoryLabel(story.relationship)}{" "}
-                · {settingLabel(story.setting)}
+                {story.publishedLabel}
               </span>
               <span className="mt-3 inline-flex items-center gap-1 text-sm font-medium text-accent">
                 Read

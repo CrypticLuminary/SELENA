@@ -9,8 +9,14 @@ from django.core.management import call_command
 from django.urls import reverse
 from django.utils import timezone
 
-from analytics.models import AnalyticsContribution, AnalyticsSnapshot
-from analytics.services import generate_snapshot
+from analytics.models import (
+    AnalyticsContribution,
+    AnalyticsEligibilityAction,
+    AnalyticsEligibilityEvent,
+    AnalyticsEligibilityReason,
+    AnalyticsSnapshot,
+)
+from analytics.services import generate_snapshot, restore_analytics_eligibility
 from submissions.models import RawSubmission
 from submissions.policy import (
     PRIVACY_POLICY_VERSION,
@@ -147,6 +153,16 @@ def test_statistics_only_path_creates_contribution_without_narrative(client):
             publication_consent=False,
             statistics_consent=True,
             story_text="",
+            people_involved=[
+                {
+                    "relationship_category": "authority",
+                    "relationship_detail": "",
+                    "involvement": "",
+                    "age_band": "",
+                }
+            ],
+            frequency="",
+            periods=[],
         ),
         content_type="application/json",
     )
@@ -192,6 +208,62 @@ def test_analytics_contribution_is_immutable_but_expiry_purge_deletes():
 
     assert AnalyticsContribution.objects.filter(source_submission_id=active_id).exists()
     assert not AnalyticsContribution.objects.filter(source_submission_id=expired_id).exists()
+
+
+@pytest.mark.django_db
+def test_excluded_contribution_is_removed_from_future_snapshots():
+    contributions = [make_contribution() for _ in range(10)]
+    target = contributions[0]
+
+    AnalyticsEligibilityEvent.objects.create(
+        source_submission_id=target.source_submission_id,
+        action=AnalyticsEligibilityAction.EXCLUDE,
+        reason_code=AnalyticsEligibilityReason.SPAM,
+    )
+
+    snapshot = generate_snapshot()
+    authority = cell(snapshot.payload["distributions"]["relationship"], "authority")
+
+    assert authority == {"category": "authority", "display": False}
+    assert snapshot.total_band == ""
+
+
+@pytest.mark.django_db
+def test_latest_restore_event_reenables_future_snapshot_eligibility():
+    contributions = [make_contribution() for _ in range(10)]
+    target = contributions[0]
+    AnalyticsEligibilityEvent.objects.create(
+        source_submission_id=target.source_submission_id,
+        action=AnalyticsEligibilityAction.EXCLUDE,
+        reason_code=AnalyticsEligibilityReason.SPAM,
+    )
+
+    restore_analytics_eligibility(target.source_submission_id, actor=None)
+    snapshot = generate_snapshot()
+    authority = cell(snapshot.payload["distributions"]["relationship"], "authority")
+
+    assert authority["display"] is True
+    assert authority["count_band"] == "10–19"
+
+
+@pytest.mark.django_db
+def test_analytics_eligibility_events_are_append_only():
+    contribution = make_contribution()
+    event = AnalyticsEligibilityEvent.objects.create(
+        source_submission_id=contribution.source_submission_id,
+        action=AnalyticsEligibilityAction.EXCLUDE,
+        reason_code=AnalyticsEligibilityReason.OUT_OF_SCOPE,
+    )
+
+    event.reason_code = AnalyticsEligibilityReason.SPAM
+    with pytest.raises(ValidationError):
+        event.save()
+
+    with pytest.raises(ValidationError):
+        AnalyticsEligibilityEvent.objects.update(reason_code=AnalyticsEligibilityReason.SPAM)
+
+    with pytest.raises(ValidationError):
+        AnalyticsEligibilityEvent.objects.all().delete()
 
 
 @pytest.mark.django_db

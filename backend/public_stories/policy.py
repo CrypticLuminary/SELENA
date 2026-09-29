@@ -8,6 +8,7 @@ PUBLICATION_MODES = {
 }
 
 MAX_PUBLIC_EXCERPT_LENGTH = 320
+PUBLIC_WITHHELD = "withheld"
 
 # Public relationship metadata is deliberately limited to the top-level
 # submission categories. More detailed relationship values remain private by
@@ -21,6 +22,7 @@ PUBLIC_RELATIONSHIPS = {
     "online",
     "other",
     "prefer_not",
+    PUBLIC_WITHHELD,
 }
 
 REPORT_REASONS = {

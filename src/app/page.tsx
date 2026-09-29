@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { getStoriesPage } from "@/lib/api";
-import type { Story } from "@/types/story";
+import type { StorySummary } from "@/types/story";
 import { StoryCard } from "@/components/stories/StoryCard";
 import { HowItWorks } from "@/components/home/HowItWorks";
 import { FadeIn } from "@/components/ui/motion";
@@ -32,7 +32,7 @@ const FLOW = ["Contribute", "Structure", "Review", "Protect", "Aggregate", "Publ
 export const dynamic = "force-dynamic";
 
 export default async function HomePage() {
-  let featured: Story[] = [];
+  let featured: StorySummary[] = [];
   try {
     featured = (await getStoriesPage({ sort: "featured" }, null, 3)).stories;
   } catch {

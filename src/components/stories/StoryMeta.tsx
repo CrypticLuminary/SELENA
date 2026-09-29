@@ -1,9 +1,9 @@
 import { TriangleAlert } from "lucide-react";
 import {
-  ageGroupLabel,
-  experienceTypeLabel,
-  personRelationshipCategoryLabel,
-  settingLabel,
+  publicAgeGroupLabel,
+  publicExperienceTypeLabel,
+  publicRelationshipLabel,
+  publicSettingLabel,
   warningLabel,
 } from "@/data/categories";
 import type { Story } from "@/types/story";
@@ -34,20 +34,20 @@ export function StoryMeta({
       <dl className="flex flex-wrap gap-x-8 gap-y-3">
         <MetaItem
           label="Age when it happened"
-          value={ageGroupLabel(story.ageGroup)}
+          value={publicAgeGroupLabel(story.ageGroup)}
         />
         <MetaItem
           label="Relationship"
-          value={personRelationshipCategoryLabel(story.relationship)}
+          value={publicRelationshipLabel(story.relationship)}
         />
-        <MetaItem label="Setting" value={settingLabel(story.setting)} />
+        <MetaItem label="Setting" value={publicSettingLabel(story.setting)} />
       </dl>
 
       {showExperience && story.experienceTypes.length > 0 ? (
         <div className="mt-4 flex flex-wrap gap-1.5">
           {story.experienceTypes.map((e) => (
             <Badge key={e} tone="neutral">
-              {experienceTypeLabel(e)}
+              {publicExperienceTypeLabel(e)}
             </Badge>
           ))}
         </div>

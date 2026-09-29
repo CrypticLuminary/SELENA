@@ -1,6 +1,6 @@
 from rest_framework.permissions import BasePermission
 
-from .models import StaffRole
+from .capabilities import StaffCapability, staff_has_capability
 
 
 class IsActiveStaff(BasePermission):
@@ -11,17 +11,28 @@ class IsActiveStaff(BasePermission):
         return bool(user and user.is_authenticated and user.is_active and user.is_staff)
 
 
-class IsModerator(BasePermission):
-    """Allow routine raw-content access only to moderation roles."""
-
-    allowed_roles = {StaffRole.MODERATOR, StaffRole.SENIOR_MODERATOR}
+class HasStaffCapability(BasePermission):
+    capability: str
 
     def has_permission(self, request, view) -> bool:
-        user = request.user
-        return bool(
-            user
-            and user.is_authenticated
-            and user.is_active
-            and user.is_staff
-            and user.role in self.allowed_roles
-        )
+        return staff_has_capability(request.user, self.capability)
+
+
+class CanViewRawSubmission(HasStaffCapability):
+    capability = StaffCapability.VIEW_RAW_SUBMISSION
+
+
+class CanClaimModerationCase(HasStaffCapability):
+    capability = StaffCapability.CLAIM_MODERATION_CASE
+
+
+class CanEditRedaction(HasStaffCapability):
+    capability = StaffCapability.EDIT_REDACTION
+
+
+class CanDecideModerationCase(HasStaffCapability):
+    capability = StaffCapability.DECIDE_MODERATION_CASE
+
+
+class CanPublishStory(HasStaffCapability):
+    capability = StaffCapability.PUBLISH_STORY

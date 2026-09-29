@@ -4,7 +4,12 @@ from rest_framework.parsers import JSONParser
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from staff_accounts.permissions import IsModerator
+from staff_accounts.permissions import (
+    CanClaimModerationCase,
+    CanDecideModerationCase,
+    CanEditRedaction,
+    CanViewRawSubmission,
+)
 from submissions.models import ConsentPurpose, ConsentRecord
 
 from .exceptions import ModerationWorkflowError
@@ -111,7 +116,7 @@ def _case_detail(case: ModerationCase) -> dict:
 
 
 class ModerationQueueView(APIView):
-    permission_classes = [IsModerator]
+    permission_classes = [CanViewRawSubmission]
 
     def get(self, request):
         cases = ModerationCase.objects.select_related("assigned_to", "submission").exclude(
@@ -121,7 +126,7 @@ class ModerationQueueView(APIView):
 
 
 class ModerationCaseDetailView(APIView):
-    permission_classes = [IsModerator]
+    permission_classes = [CanViewRawSubmission]
 
     def get(self, request, case_id):
         case = get_object_or_404(
@@ -132,7 +137,7 @@ class ModerationCaseDetailView(APIView):
 
 
 class ModerationClaimView(APIView):
-    permission_classes = [IsModerator]
+    permission_classes = [CanClaimModerationCase]
     parser_classes = [JSONParser]
 
     def post(self, request, case_id):
@@ -145,7 +150,7 @@ class ModerationClaimView(APIView):
 
 
 class RedactionDraftCreateView(APIView):
-    permission_classes = [IsModerator]
+    permission_classes = [CanEditRedaction]
     parser_classes = [JSONParser]
 
     def post(self, request, case_id):
@@ -173,7 +178,7 @@ class RedactionDraftCreateView(APIView):
 
 
 class ModerationDecisionView(APIView):
-    permission_classes = [IsModerator]
+    permission_classes = [CanDecideModerationCase]
     parser_classes = [JSONParser]
 
     def post(self, request, case_id):

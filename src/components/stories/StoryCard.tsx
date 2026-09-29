@@ -1,14 +1,9 @@
 import Link from "next/link";
 import { ArrowRight, TriangleAlert } from "lucide-react";
-import {
-  ageGroupLabel,
-  personRelationshipCategoryLabel,
-  settingLabel,
-} from "@/data/categories";
-import type { Story } from "@/types/story";
+import type { StorySummary } from "@/types/story";
 
 /** An editorial entry in the archive — reads like a library card, not a feed post. */
-export function StoryCard({ story }: { story: Story }) {
+export function StoryCard({ story }: { story: StorySummary }) {
   const hasWarning = story.warnings.length > 0;
   return (
     <Link
@@ -16,8 +11,7 @@ export function StoryCard({ story }: { story: Story }) {
       className="group flex h-full flex-col rounded-2xl border border-line bg-surface p-6 transition-colors hover:border-line-strong focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-canvas sm:p-7"
     >
       <p className="text-[0.72rem] font-medium uppercase tracking-[0.1em] text-ink-faint">
-        {personRelationshipCategoryLabel(story.relationship)} · {settingLabel(story.setting)} ·{" "}
-        {ageGroupLabel(story.ageGroup)}
+        {story.publishedLabel}
       </p>
 
       <h3 className="mt-3 font-serif text-card font-medium text-ink">

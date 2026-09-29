@@ -6,7 +6,12 @@ from submissions.taxonomy import (
     SETTINGS,
 )
 
-from .policy import MAX_PUBLIC_EXCERPT_LENGTH, PUBLIC_RELATIONSHIPS, REPORT_REASONS
+from .policy import (
+    MAX_PUBLIC_EXCERPT_LENGTH,
+    PUBLIC_RELATIONSHIPS,
+    PUBLIC_WITHHELD,
+    REPORT_REASONS,
+)
 
 
 class StrictSerializer(serializers.Serializer):
@@ -30,11 +35,11 @@ class PublicationInputSerializer(StrictSerializer):
     submission; serializer choices alone are not an authorization boundary.
     """
 
-    age_group = serializers.ChoiceField(choices=sorted(AGE_GROUPS))
+    age_group = serializers.ChoiceField(choices=sorted(AGE_GROUPS | {PUBLIC_WITHHELD}))
     relationship = serializers.ChoiceField(choices=sorted(PUBLIC_RELATIONSHIPS))
-    setting = serializers.ChoiceField(choices=sorted(SETTINGS))
+    setting = serializers.ChoiceField(choices=sorted(SETTINGS | {PUBLIC_WITHHELD}))
     experience_types = serializers.ListField(
-        child=serializers.ChoiceField(choices=sorted(EXPERIENCE_TYPES)),
+        child=serializers.ChoiceField(choices=sorted(EXPERIENCE_TYPES | {PUBLIC_WITHHELD})),
         min_length=1,
         max_length=len(EXPERIENCE_TYPES),
     )
@@ -48,9 +53,9 @@ class StoryReportInputSerializer(StrictSerializer):
     reason = serializers.ChoiceField(choices=sorted(REPORT_REASONS))
 
 
-class PublicStoryFilterSerializer(serializers.Serializer):
+class PublicStoryFilterSerializer(StrictSerializer):
     relationship = serializers.ChoiceField(
-        choices=sorted(PUBLIC_RELATIONSHIPS),
+        choices=sorted(PUBLIC_RELATIONSHIPS - {PUBLIC_WITHHELD}),
         required=False,
     )
     setting = serializers.ChoiceField(choices=sorted(SETTINGS), required=False)
@@ -63,14 +68,23 @@ class PublicStoryFilterSerializer(serializers.Serializer):
     cursor = serializers.UUIDField(required=False)
     page_size = serializers.IntegerField(required=False, min_value=1, max_value=50)
 
+    def validate(self, attrs):
+        category_filters = (
+            "relationship",
+            "setting",
+            "age_group",
+            "experience_type",
+        )
+        if sum(bool(attrs.get(name)) for name in category_filters) > 1:
+            raise serializers.ValidationError(
+                "Public story browsing accepts only one category filter at a time."
+            )
+        return attrs
+
 
 class PublicStoryListSerializer(serializers.Serializer):
     id = serializers.UUIDField()
     alias = serializers.CharField()
-    age_group = serializers.CharField()
-    relationship = serializers.CharField()
-    setting = serializers.CharField()
-    experience_types = serializers.ListField(child=serializers.CharField())
     warnings = serializers.ListField(child=serializers.CharField())
     excerpt = serializers.CharField()
     published_label = serializers.SerializerMethodField()
@@ -81,4 +95,8 @@ class PublicStoryListSerializer(serializers.Serializer):
 
 
 class PublicStoryDetailSerializer(PublicStoryListSerializer):
+    age_group = serializers.CharField()
+    relationship = serializers.CharField()
+    setting = serializers.CharField()
+    experience_types = serializers.ListField(child=serializers.CharField())
     content = serializers.CharField()

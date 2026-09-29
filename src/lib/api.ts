@@ -3,6 +3,7 @@ import {
   AGE_GROUPS,
   EXPERIENCE_TYPES,
   PERSON_RELATIONSHIP_CATEGORIES,
+  PUBLIC_WITHHELD,
   SETTINGS,
   WARNINGS,
   ageGroupLabel,
@@ -17,7 +18,12 @@ import {
   type Warning,
 } from "@/data/categories";
 import { PRIVACY_POLICY_VERSION } from "@/lib/privacy";
-import type { Story, StoryFilters, StoryPage } from "@/types/story";
+import type {
+  Story,
+  StoryFilters,
+  StoryPage,
+  StorySummary,
+} from "@/types/story";
 import type {
   AggregateSnapshot,
   CountBand,
@@ -42,18 +48,19 @@ const settingValues: Set<string> = new Set(SETTINGS.map((item) => item.value));
 const experienceValues: Set<string> = new Set(EXPERIENCE_TYPES.map((item) => item.value));
 const warningValues: Set<string> = new Set(WARNINGS.map((item) => item.value));
 
+const publicAgeValues = new Set([...ageValues, PUBLIC_WITHHELD]);
+const publicRelationshipValues = new Set([...relationshipValues, PUBLIC_WITHHELD]);
+const publicSettingValues = new Set([...settingValues, PUBLIC_WITHHELD]);
+const publicExperienceValues = new Set([...experienceValues, PUBLIC_WITHHELD]);
+
 function allowedValue(values: Set<string>) {
   return z.string().refine((value) => values.has(value));
 }
 
-const publicStoryBaseSchema = z
+const publicStorySummarySchema = z
   .object({
     id: z.string().uuid(),
     alias: z.string().min(1).max(64),
-    age_group: allowedValue(ageValues),
-    relationship: allowedValue(relationshipValues),
-    setting: allowedValue(settingValues),
-    experience_types: z.array(allowedValue(experienceValues)),
     warnings: z.array(allowedValue(warningValues)),
     excerpt: z.string().max(320),
     published_label: z.string().regex(/^Shared in \d{4}$/),
@@ -61,8 +68,12 @@ const publicStoryBaseSchema = z
   })
   .strict();
 
-const publicStoryDetailSchema = publicStoryBaseSchema
+const publicStoryDetailSchema = publicStorySummarySchema
   .extend({
+    age_group: allowedValue(publicAgeValues),
+    relationship: allowedValue(publicRelationshipValues),
+    setting: allowedValue(publicSettingValues),
+    experience_types: z.array(allowedValue(publicExperienceValues)),
     content: z.string(),
   })
   .strict();
@@ -70,7 +81,7 @@ const publicStoryDetailSchema = publicStoryBaseSchema
 const publicStoryPageSchema = z
   .object({
     next_cursor: z.string().uuid().nullable(),
-    results: z.array(publicStoryBaseSchema),
+    results: z.array(publicStorySummarySchema),
   })
   .strict();
 
@@ -161,22 +172,27 @@ function windowOrGlobalSetTimeout(callback: () => void, ms: number) {
   return setTimeout(callback, ms);
 }
 
-function mapStory(
-  value: z.infer<typeof publicStoryBaseSchema>,
-  content = "",
-): Story {
+function mapStorySummary(
+  value: z.infer<typeof publicStorySummarySchema>,
+): StorySummary {
   return {
     id: value.id,
     alias: value.alias,
-    ageGroup: value.age_group as AgeGroup,
-    relationship: value.relationship as PersonRelationshipCategory,
-    setting: value.setting as Setting,
-    experienceTypes: value.experience_types as ExperienceType[],
     warnings: value.warnings as Warning[],
     excerpt: value.excerpt,
-    content,
     publishedLabel: value.published_label,
     featured: value.featured,
+  };
+}
+
+function mapStory(value: z.infer<typeof publicStoryDetailSchema>): Story {
+  return {
+    ...mapStorySummary(value),
+    ageGroup: value.age_group as Story["ageGroup"],
+    relationship: value.relationship as Story["relationship"],
+    setting: value.setting as Story["setting"],
+    experienceTypes: value.experience_types as Story["experienceTypes"],
+    content: value.content,
   };
 }
 
@@ -185,6 +201,16 @@ function storyQuery(
   cursor?: string | null,
   pageSize?: number,
 ): string {
+  const categoryFilterCount = [
+    filters.relationship,
+    filters.setting,
+    filters.ageGroup,
+    filters.experienceType,
+  ].filter(Boolean).length;
+  if (categoryFilterCount > 1) {
+    throw new ApiError(400, "Browse stories using one broad category at a time.");
+  }
+
   const params = new URLSearchParams();
   if (filters.relationship) params.set("relationship", filters.relationship);
   if (filters.setting) params.set("setting", filters.setting);
@@ -210,14 +236,14 @@ export async function getStoriesPage(
     publicStoryPageSchema,
   );
   return {
-    stories: page.results.map((story) => mapStory(story)),
+    stories: page.results.map((story) => mapStorySummary(story)),
     nextCursor: page.next_cursor,
   };
 }
 
 export async function getStories(
   filters: StoryFilters = {},
-): Promise<Story[]> {
+): Promise<StorySummary[]> {
   return (await getStoriesPage(filters)).stories;
 }
 
@@ -227,7 +253,7 @@ export async function getStory(id: string): Promise<Story | null> {
       `/stories/${encodeURIComponent(id)}/`,
       publicStoryDetailSchema,
     );
-    return mapStory(story, story.content);
+    return mapStory(story);
   } catch (error) {
     if (error instanceof ApiError && error.status === 404) return null;
     throw error;
@@ -237,9 +263,14 @@ export async function getStory(id: string): Promise<Story | null> {
 export async function getRelatedStories(
   story: Story,
   limit = 3,
-): Promise<Story[]> {
+): Promise<StorySummary[]> {
+  const filters: StoryFilters = { sort: "recent" };
+  if (story.relationship !== PUBLIC_WITHHELD) {
+    filters.relationship = story.relationship;
+  }
+
   const page = await getStoriesPage(
-    { relationship: story.relationship, sort: "recent" },
+    filters,
     null,
     Math.min(limit + 1, 20),
   );
@@ -252,21 +283,38 @@ function submissionPayload(submission: Submission) {
   }
 
   const publicPath = submission.publicationChoice === "public";
+  const statisticsOnlyRelationships = Array.from(
+    new Set(
+      submission.peopleInvolved
+        .map((person) => person.relationshipCategory)
+        .filter(Boolean),
+    ),
+  ).map((relationshipCategory) => ({
+    relationship_category: relationshipCategory,
+    relationship_detail: "",
+    involvement: "",
+    age_band: "",
+  }));
+
   return {
     age_group: submission.ageGroup,
     setting: submission.setting,
     experience_types: submission.experienceTypes,
-    people_involved: submission.peopleInvolved.map((person) => ({
-      relationship_category: person.relationshipCategory,
-      relationship_detail: person.relationshipDetail,
-      involvement: person.involvement,
-      age_band: person.ageBand,
-    })),
-    frequency: submission.frequency,
-    periods: submission.periods.map((period) => ({
-      start_age_band: period.startAgeBand,
-      end_age_band: period.endAgeBand,
-    })),
+    people_involved: publicPath
+      ? submission.peopleInvolved.map((person) => ({
+          relationship_category: person.relationshipCategory,
+          relationship_detail: person.relationshipDetail,
+          involvement: person.involvement,
+          age_band: person.ageBand,
+        }))
+      : statisticsOnlyRelationships,
+    frequency: publicPath ? submission.frequency : "",
+    periods: publicPath
+      ? submission.periods.map((period) => ({
+          start_age_band: period.startAgeBand,
+          end_age_band: period.endAgeBand,
+        }))
+      : [],
     story_text: publicPath ? submission.storyText : "",
     publication_choice: submission.publicationChoice,
     publication_consent: publicPath ? submission.consentPublish : false,

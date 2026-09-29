@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { getStoriesPage } from "@/lib/api";
-import type { Story, StoryFilters } from "@/types/story";
+import type { StoryFilters, StorySummary } from "@/types/story";
 import { StoryControls } from "./StoryControls";
 import { StoryGrid } from "./StoryGrid";
 import { StoryCardSkeleton } from "@/components/ui/skeleton";
@@ -18,7 +18,7 @@ export function StoriesArchive({
   initialFilters?: StoryFilters;
 }) {
   const [filters, setFilters] = useState<StoryFilters>(initialFilters);
-  const [stories, setStories] = useState<Story[]>([]);
+  const [stories, setStories] = useState<StorySummary[]>([]);
   const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [status, setStatus] = useState<Status>("loading");
   const [loadingMore, setLoadingMore] = useState(false);
@@ -96,8 +96,7 @@ export function StoriesArchive({
         ) : (
           <>
             <p className="mb-4 text-sm text-ink-faint">
-              Showing {stories.length}{" "}
-              {stories.length === 1 ? "story" : "stories"}.
+              Browse the available privacy-reviewed stories below.
             </p>
             <StoryGrid stories={stories} />
 

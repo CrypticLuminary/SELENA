@@ -12,7 +12,8 @@ from moderation.models import (
     ModerationStatus,
 )
 from privacy_review.detector import detect_identifying_details
-from staff_accounts.models import StaffRole, StaffUser
+from staff_accounts.capabilities import StaffCapability, staff_has_capability
+from staff_accounts.models import StaffUser
 from submissions.models import (
     ConsentPurpose,
     ConsentRecord,
@@ -24,10 +25,14 @@ from .aliases import generate_public_alias
 from .exceptions import PublicationWorkflowError
 from .models import PublicationRecord, PublicRemovalCredential, PublicStory
 from .policy import (
+    PUBLIC_WITHHELD,
     PUBLICATION_MODE_DISABLED,
     PUBLICATION_MODE_SINGLE,
     PUBLICATION_MODES,
 )
+
+NO_PUBLISH_PERMISSION = "This staff account does not have publication permission."
+NO_DUAL_CONTROL_PERMISSION = "This staff account cannot perform dual-control publication."
 
 
 def _latest_publication_consent(case: ModerationCase) -> ConsentRecord | None:
@@ -65,12 +70,14 @@ def _validate_control_mode(
         raise PublicationWorkflowError("Publication is disabled by governance configuration.")
 
     if mode == PUBLICATION_MODE_SINGLE:
-        if actor.role not in {StaffRole.MODERATOR, StaffRole.SENIOR_MODERATOR}:
-            raise PublicationWorkflowError("This role cannot publish stories.")
+        if not staff_has_capability(actor, StaffCapability.PUBLISH_STORY):
+            raise PublicationWorkflowError(NO_PUBLISH_PERMISSION)
         return
 
-    if actor.role != StaffRole.SENIOR_MODERATOR:
-        raise PublicationWorkflowError("Dual-control publication requires a senior moderator.")
+    if not staff_has_capability(actor, StaffCapability.PUBLISH_STORY):
+        raise PublicationWorkflowError(NO_PUBLISH_PERMISSION)
+    if not staff_has_capability(actor, StaffCapability.PUBLISH_STORY_DUAL_CONTROL):
+        raise PublicationWorkflowError(NO_DUAL_CONTROL_PERMISSION)
     if actor.pk == approval_actor.pk:
         raise PublicationWorkflowError(
             "Dual-control publication requires a different staff member."
@@ -90,22 +97,26 @@ def _validate_public_projection(
 
     Moderators cannot invent or increase specificity at publication time.
     """
-    if age_group != "prefer_not" and age_group != submission.age_group:
+    if age_group != PUBLIC_WITHHELD and age_group != submission.age_group:
         raise PublicationWorkflowError(
-            "Public age group must match the submitted broad value or be suppressed."
+            "Public age group must match the submitted broad value or be withheld."
         )
 
-    if setting != "prefer_not" and setting != submission.setting:
+    if setting != PUBLIC_WITHHELD and setting != submission.setting:
         raise PublicationWorkflowError(
-            "Public setting must match the submitted broad value or be suppressed."
+            "Public setting must match the submitted broad value or be withheld."
         )
 
     cleaned_experiences = list(dict.fromkeys(experience_types))
+    if PUBLIC_WITHHELD in cleaned_experiences and len(cleaned_experiences) != 1:
+        raise PublicationWorkflowError(
+            "Withheld metadata cannot be combined with public experience values."
+        )
     if "prefer_not" in cleaned_experiences and len(cleaned_experiences) != 1:
         raise PublicationWorkflowError(
             "Prefer-not-to-say cannot be combined with public experience values."
         )
-    if cleaned_experiences != ["prefer_not"]:
+    if cleaned_experiences != [PUBLIC_WITHHELD]:
         source_experiences = set(submission.experience_types)
         if any(value not in source_experiences for value in cleaned_experiences):
             raise PublicationWorkflowError(
@@ -118,9 +129,9 @@ def _validate_public_projection(
         if isinstance(person, dict)
     }
     source_relationships.discard(None)
-    if relationship != "prefer_not" and relationship not in source_relationships:
+    if relationship != PUBLIC_WITHHELD and relationship not in source_relationships:
         raise PublicationWorkflowError(
-            "Public relationship must match a submitted broad category or be suppressed."
+            "Public relationship must match a submitted broad category or be withheld."
         )
 
     return cleaned_experiences
@@ -215,6 +226,12 @@ def publish_case(
         source_draft_id=draft.id,
         source_draft_version=draft.version,
         approval_event_id=approval.id,
+        publication_consent_record_id=consent.id,
+        publication_consent_text_version=consent.consent_text_version,
+        publication_consent_privacy_policy_version=consent.privacy_policy_version,
+        publication_consent_schema_version=consent.schema_version,
+        publication_consent_source_flow_version=consent.source_flow_version,
+        publication_consent_recorded_at=consent.recorded_at,
         moderation_approved_by=approval.actor,
         published_by=actor,
         control_mode=mode,

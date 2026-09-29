@@ -26,5 +26,24 @@ class StaffUser(AbstractUser):
     email = models.EmailField(unique=True)
     role = models.CharField(max_length=32, choices=StaffRole.choices, default=StaffRole.MODERATOR)
 
+    class Meta:
+        permissions = [
+            ("view_raw_submission", "Can view raw survivor submissions"),
+            ("claim_moderation_case", "Can claim moderation cases"),
+            ("edit_redaction", "Can create privacy redaction drafts"),
+            ("decide_moderation_case", "Can decide moderation cases"),
+            ("handle_escalated_moderation", "Can handle escalated moderation cases"),
+            ("publish_story", "Can publish an approved story"),
+            (
+                "publish_story_dual_control",
+                "Can perform final publication under dual control",
+            ),
+            ("review_analytics", "Can review approved analytics operations"),
+            ("handle_story_report", "Can handle public story reports"),
+            ("process_removal", "Can process verified removal requests"),
+            ("manage_staff_access", "Can manage staff access"),
+            ("break_glass_raw_access", "Can perform audited emergency raw access"),
+        ]
+
     def __str__(self) -> str:
         return self.username

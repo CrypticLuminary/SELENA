@@ -183,4 +183,24 @@ class AnonymousSubmissionSerializer(StrictSerializer):
                     {"statistics_consent": "Explicit statistics consent is required."}
                 )
 
+            if attrs["frequency"]:
+                raise serializers.ValidationError(
+                    {"frequency": "Frequency is not collected for statistics-only submissions."}
+                )
+            if attrs["periods"]:
+                raise serializers.ValidationError(
+                    {"periods": "Periods are not collected for statistics-only submissions."}
+                )
+
+            for person in attrs["people_involved"]:
+                if person["relationship_detail"] or person["involvement"] or person["age_band"]:
+                    raise serializers.ValidationError(
+                        {
+                            "people_involved": (
+                                "Statistics-only submissions accept only broad "
+                                "relationship categories."
+                            )
+                        }
+                    )
+
         return attrs
