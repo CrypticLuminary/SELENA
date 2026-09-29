@@ -50,3 +50,23 @@ See the root `docs/` governance and threat-model documents before adding product
 ## CI
 
 `.github/workflows/backend-ci.yml` runs the same foundation checks against a PostgreSQL service on every backend change. CI is intentionally read-only with respect to repository contents.
+
+## Retention maintenance
+
+Phase 3 adds two explicit maintenance commands:
+
+```bash
+python manage.py purge_expired_submissions
+python manage.py purge_expired_tombstones
+```
+
+The first removes expired raw submissions only after creating minimal deletion
+tombstones, so a later backup restore can replay prior deletions before service
+is reopened. Tombstones contain only opaque submission IDs and deletion
+metadata; they do not contain survivor narratives or structured submission
+fields.
+
+The second removes tombstones after the configured tombstone retention period.
+Production scheduling for these commands belongs to the deployment/operations
+milestone.
+
