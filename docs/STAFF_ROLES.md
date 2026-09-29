@@ -12,6 +12,36 @@
 - publication/removal actions are audited;
 - no unrestricted raw export in MVP.
 
+## Authorization model
+
+Role names are **provisioning templates and human-readable labels**, not the
+runtime authorization boundary. Sensitive server actions use explicit Django
+capabilities.
+
+Current capability vocabulary:
+- `view_raw_submission`
+- `claim_moderation_case`
+- `edit_redaction`
+- `decide_moderation_case`
+- `handle_escalated_moderation`
+- `publish_story`
+- `publish_story_dual_control`
+- `review_analytics`
+- `handle_story_report`
+- `process_removal`
+- `manage_staff_access`
+- `break_glass_raw_access`
+
+The role template provisions an initial bundle. Phase 9 staff administration may
+grant additional approved capabilities/groups, but authorization code must not
+fall back to testing `user.role`. The staff identity endpoint may expose
+effective capabilities so the UI can hide unavailable controls, but backend
+permission/service checks remain authoritative.
+
+A user labelled Moderator with no provisioned capabilities has no moderation
+authority. Likewise, Superadmin does not inherit raw-story access merely from a
+label or Django superuser semantics in SELENA's capability helper.
+
 ## Roles
 
 ### Moderator

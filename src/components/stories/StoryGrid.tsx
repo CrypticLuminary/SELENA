@@ -1,7 +1,7 @@
-import type { Story } from "@/types/story";
+import type { StorySummary } from "@/types/story";
 import { StoryCard } from "./StoryCard";
 
-export function StoryGrid({ stories }: { stories: Story[] }) {
+export function StoryGrid({ stories }: { stories: StorySummary[] }) {
   return (
     <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
       {stories.map((story) => (

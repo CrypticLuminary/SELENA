@@ -112,6 +112,25 @@
 - [x] final adversarial composition review
 - [x] final branch cleanup + stacked draft PR #13
 
+## M8.5 — Product/domain validation gate
+**Status:** Engineering complete on `phase-8.5-product-domain-validation`; draft PR #15 open; governance/domain decisions remain pending
+- [x] purpose-limit statistics-only collection/persistence
+- [x] preserve minimal publication-consent provenance beyond raw retention
+- [x] distinguish survivor `prefer_not` from moderator privacy withholding
+- [x] minimize public story list metadata and limit archive to one category filter
+- [x] separate append-only analytics eligibility from publication/credibility decisions
+- [x] define explicit staff capability permissions and role templates
+- [x] enforce moderation/publication capabilities at API and service boundaries
+- [x] document separate domain state-machine ownership for Phase 9
+- [x] mark current taxonomy as product/descriptive vocabulary, not a prevalence instrument
+- [ ] approve meaning-preserving redaction/editorial policy
+- [ ] domain/survivor-support review of field purposes and terminology
+- [ ] decide current-minor/safeguarding scope
+- [ ] choose initial closed-beta jurisdiction and verify support resources
+- [ ] decide editorial featuring policy
+- [x] final self-review + stacked draft PR #15
+- [x] exact final CI after single-commit branch cleanup
+
 ## M9 — Staff moderation/admin
 **Status:** Not started
 - [ ] moderator dashboard

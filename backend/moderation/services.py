@@ -7,7 +7,8 @@ from django.db import transaction
 from django.utils import timezone
 
 from privacy_review.detector import detect_identifying_details
-from staff_accounts.models import StaffRole, StaffUser
+from staff_accounts.capabilities import StaffCapability, staff_has_capability
+from staff_accounts.models import StaffUser
 from submissions.models import (
     ConsentPurpose,
     ConsentRecord,
@@ -83,10 +84,18 @@ def ensure_moderation_case(submission: RawSubmission) -> ModerationCase | None:
 
 @transaction.atomic
 def claim_case(case_id, actor: StaffUser) -> ModerationCase:
+    if not staff_has_capability(actor, StaffCapability.CLAIM_MODERATION_CASE):
+        raise ModerationWorkflowError("This staff account cannot claim moderation cases.")
+
     case = ModerationCase.objects.select_for_update().get(pk=case_id)
 
-    if case.status == ModerationStatus.ESCALATED and actor.role != StaffRole.SENIOR_MODERATOR:
-        raise ModerationWorkflowError("Escalated cases require a senior moderator.")
+    if case.status == ModerationStatus.ESCALATED and not staff_has_capability(
+        actor,
+        StaffCapability.HANDLE_ESCALATED_MODERATION,
+    ):
+        raise ModerationWorkflowError(
+            "This staff account cannot handle escalated moderation cases."
+        )
 
     if case.status not in {ModerationStatus.PENDING, ModerationStatus.ESCALATED}:
         raise ModerationWorkflowError("This case cannot be claimed in its current state.")
@@ -120,6 +129,9 @@ def create_redaction_draft(
     redacted_text: str,
     content_warnings: list[str],
 ) -> RedactionDraft:
+    if not staff_has_capability(actor, StaffCapability.EDIT_REDACTION):
+        raise ModerationWorkflowError("This staff account cannot create redaction drafts.")
+
     case = ModerationCase.objects.select_for_update().get(pk=case_id)
     _require_assigned(case, actor)
 
@@ -161,6 +173,9 @@ def decide_case(
     decision: str,
     reason_code: str = "",
 ) -> ModerationCase:
+    if not staff_has_capability(actor, StaffCapability.DECIDE_MODERATION_CASE):
+        raise ModerationWorkflowError("This staff account cannot decide moderation cases.")
+
     case = ModerationCase.objects.select_for_update().get(pk=case_id)
     _require_assigned(case, actor)
 
@@ -194,6 +209,17 @@ def decide_case(
             days=settings.REJECTED_SUBMISSION_RETENTION_DAYS
         )
         case.submission.save(update_fields=["state", "retention_expires_at"])
+
+        # Aggregate eligibility is a separate decision from publication.
+        # Only narrow technical/purpose rejection reasons affect future
+        # snapshots; privacy/content-policy rejections do not judge credibility.
+        from analytics.services import exclude_analytics_contribution_for_moderation
+
+        exclude_analytics_contribution_for_moderation(
+            case.submission_id,
+            actor=actor,
+            moderation_reason=reason_code,
+        )
     elif decision == ModerationAction.ESCALATED:
         if reason_code not in ESCALATION_REASONS:
             raise ModerationWorkflowError("A supported escalation reason is required.")

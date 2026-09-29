@@ -88,6 +88,79 @@ merely because the implementation exists.
 **Reason:** Implementing both policy options should not silently resolve DEC-011
 or make public release possible before governance approval.
 
+## DEC-014 — Statistics-only collection is purpose-limited
+**Status:** Accepted as engineering baseline
+
+The statistics-only path collects and persists only fields used by the approved
+aggregate design: broad age group, setting, experience types, and broad
+relationship categories. Narrative-adjacent detail, person age/involvement,
+frequency, and periods are not retained “just in case.”
+
+**Reason:** data minimization must happen at collection/persistence, not merely
+by ignoring extra fields during aggregation.
+
+## DEC-015 — Publication keeps minimal durable consent provenance
+**Status:** Accepted as engineering baseline
+
+When a public story outlives its raw source, the publication record retains the
+minimum versioned consent evidence that authorized publication. It does not
+retain the raw narrative.
+
+**Reason:** raw-data deletion must not erase the platform's ability to explain
+which consent/version supported an ongoing public publication.
+
+## DEC-016 — Privacy withholding is distinct from survivor prefer-not choice
+**Status:** Accepted
+
+`prefer_not` represents the submitter's own answer. A moderator privacy
+suppression uses the public-only `withheld` state and is displayed as “Not
+shown for privacy.”
+
+**Reason:** privacy processing must not rewrite a survivor's expressed choice.
+
+## DEC-017 — Story archive is a reading surface, not an analytics endpoint
+**Status:** Accepted as engineering baseline
+
+Bulk story lists expose metadata-minimized summaries and accept at most one broad
+category filter at a time. Full approved structured metadata is disclosed only
+on the deliberately opened individual story detail. Aggregate multi-dimensional
+comparison belongs to the privacy-safe Patterns boundary.
+
+**Reason:** privacy controls must compose across public surfaces; a permissive
+faceted archive must not undermine the stricter aggregate API.
+
+## DEC-018 — Analytics eligibility is separate from publication and credibility
+**Status:** Accepted as engineering baseline
+
+Statistics consent creates a minimized contribution. Future snapshot eligibility
+is controlled by separate append-only evidence. Only bounded technical/purpose
+failures currently exclude data (spam and out-of-scope). Publication/privacy
+rejection does not mean a survivor account is false.
+
+**Reason:** SELENA may defend aggregate quality against technical abuse without
+creating a credibility-adjudication system.
+
+## DEC-019 — Staff roles are templates; capabilities authorize actions
+**Status:** Accepted as engineering baseline
+
+Human-readable staff roles provision default permission bundles. Sensitive
+authorization checks use explicit server-side capabilities, and domain services
+repeat critical checks. Superadmin/superuser labels do not constitute a hidden
+raw-story bypass.
+
+**Reason:** least privilege, dual control, multi-role staff, and time-limited
+emergency access cannot be modeled safely as one permanent enum role.
+
+## DEC-020 — Current taxonomy is product vocabulary, not a validated prevalence instrument
+**Status:** Accepted
+
+SELENA's current age/setting/experience/relationship vocabulary supports
+storytelling and descriptive privacy-safe Patterns about SELENA submissions.
+It is not represented as a validated population-prevalence instrument.
+
+A future research-quality measurement purpose requires separate methodology,
+domain validation, ethics/governance review, and an approved change in purpose.
+
 ## Pending decisions
 - approve/modify DEC-010 retention periods
 - approve DEC-011 publication-control model

@@ -1,6 +1,7 @@
 import pytest
 from django.urls import reverse
 
+from staff_accounts.capabilities import StaffCapability, apply_role_template
 from staff_accounts.models import StaffRole, StaffUser
 
 
@@ -34,6 +35,7 @@ def test_staff_me_returns_minimal_authenticated_identity(client):
         role=StaffRole.MODERATOR,
         is_staff=True,
     )
+    apply_role_template(user)
     client.force_login(user)
 
     response = client.get(reverse("staff-me"))
@@ -43,5 +45,15 @@ def test_staff_me_returns_minimal_authenticated_identity(client):
         "id": str(user.pk),
         "username": "moderator1",
         "role": StaffRole.MODERATOR,
+        "capabilities": sorted(
+            [
+                StaffCapability.VIEW_RAW_SUBMISSION,
+                StaffCapability.CLAIM_MODERATION_CASE,
+                StaffCapability.EDIT_REDACTION,
+                StaffCapability.DECIDE_MODERATION_CASE,
+                StaffCapability.PUBLISH_STORY,
+                StaffCapability.HANDLE_STORY_REPORT,
+            ]
+        ),
     }
     assert "email" not in response.json()

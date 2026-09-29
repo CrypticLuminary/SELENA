@@ -3,6 +3,7 @@ from uuid import UUID
 
 import pytest
 from django.contrib.auth.hashers import check_password, make_password
+from django.contrib.auth.models import Permission
 from django.core.cache import cache
 from django.core.exceptions import ValidationError
 from django.urls import reverse
@@ -11,13 +12,16 @@ from rest_framework.test import APIRequestFactory
 
 from moderation.models import ModerationStatus
 from moderation.services import claim_case, create_redaction_draft, decide_case
+from public_stories.exceptions import PublicationWorkflowError
 from public_stories.models import (
     PublicationRecord,
     PublicRemovalCredential,
     PublicStory,
     StoryReport,
 )
+from public_stories.services import publish_case
 from public_stories.throttles import StoryReportAnonThrottle
+from staff_accounts.capabilities import StaffCapability, apply_role_template
 from staff_accounts.models import StaffRole, StaffUser
 from submissions.models import (
     ConsentPurpose,
@@ -37,13 +41,15 @@ def clear_throttle_cache():
 
 
 def make_staff(username: str, role: str) -> StaffUser:
-    return StaffUser.objects.create_user(
+    user = StaffUser.objects.create_user(
         username=username,
         email=f"{username}@example.test",
         password="A-long-test-password-123!",
         role=role,
         is_staff=True,
     )
+    apply_role_template(user)
+    return user
 
 
 def make_approved_case(
@@ -150,6 +156,11 @@ def test_single_moderator_publication_copies_only_approved_public_projection(
     assert published.status_code == 201
     story = PublicStory.objects.get()
     record = PublicationRecord.objects.get(public_story_id=story.id)
+    consent = ConsentRecord.objects.filter(
+        submission=case.submission,
+        purpose=ConsentPurpose.PUBLICATION,
+        granted=True,
+    ).latest("recorded_at")
 
     assert story.content == "A privacy-reviewed public account."
     assert "PRIVATE RAW TEXT" not in story.content
@@ -163,6 +174,12 @@ def test_single_moderator_publication_copies_only_approved_public_projection(
     assert record.source_case_id == case.id
     assert record.source_submission_id == case.submission_id
     assert record.source_draft_version == 1
+    assert record.publication_consent_record_id == consent.id
+    assert record.publication_consent_text_version == consent.consent_text_version
+    assert record.publication_consent_privacy_policy_version == consent.privacy_policy_version
+    assert record.publication_consent_schema_version == consent.schema_version
+    assert record.publication_consent_source_flow_version == consent.source_flow_version
+    assert record.publication_consent_recorded_at == consent.recorded_at
     assert record.moderation_approved_by == moderator
     assert record.published_by == moderator
     assert record.control_mode == "single_moderator"
@@ -205,9 +222,38 @@ def test_publication_cannot_enrich_or_invent_structured_metadata(
 
 
 @pytest.mark.django_db
-def test_publication_can_suppress_structured_metadata(client, settings):
+def test_publication_can_withhold_structured_metadata_without_rewriting_survivor_choice(
+    client,
+    settings,
+):
     settings.PUBLICATION_CONTROL_MODE = "single_moderator"
     moderator = make_staff("moderator1", StaffRole.MODERATOR)
+    case = make_approved_case(moderator)
+    client.force_login(moderator)
+
+    response = client.post(
+        reverse("publish-moderation-case", args=[case.id]),
+        data=publication_payload(
+            age_group="withheld",
+            relationship="withheld",
+            setting="withheld",
+            experience_types=["withheld"],
+        ),
+        content_type="application/json",
+    )
+
+    assert response.status_code == 201
+    story = PublicStory.objects.get()
+    assert story.age_group == "withheld"
+    assert story.relationship == "withheld"
+    assert story.setting == "withheld"
+    assert story.experience_types == ["withheld"]
+
+
+@pytest.mark.django_db
+def test_publication_cannot_use_prefer_not_as_moderator_suppression(client, settings):
+    settings.PUBLICATION_CONTROL_MODE = "single_moderator"
+    moderator = make_staff("moderator-prefer-not", StaffRole.MODERATOR)
     case = make_approved_case(moderator)
     client.force_login(moderator)
 
@@ -222,12 +268,8 @@ def test_publication_can_suppress_structured_metadata(client, settings):
         content_type="application/json",
     )
 
-    assert response.status_code == 201
-    story = PublicStory.objects.get()
-    assert story.age_group == "prefer_not"
-    assert story.relationship == "prefer_not"
-    assert story.setting == "prefer_not"
-    assert story.experience_types == ["prefer_not"]
+    assert response.status_code == 400
+    assert PublicStory.objects.count() == 0
 
 
 @pytest.mark.django_db
@@ -275,6 +317,10 @@ def test_public_story_api_exposes_no_private_provenance_or_exact_date(client, se
 
     listed = listing_body["results"][0]
     assert "content" not in listed
+    assert "age_group" not in listed
+    assert "relationship" not in listed
+    assert "setting" not in listed
+    assert "experience_types" not in listed
     assert "published_at" not in listed
     assert "source_case_id" not in listed
     assert "source_submission_id" not in listed
@@ -356,6 +402,36 @@ def test_dual_control_requires_different_senior_moderator(client, settings):
     record = PublicationRecord.objects.get()
     assert record.moderation_approved_by == moderator
     assert record.published_by == senior
+
+
+@pytest.mark.django_db
+def test_dual_control_service_requires_base_publish_capability(settings):
+    settings.PUBLICATION_CONTROL_MODE = "dual_control"
+
+    moderator = make_staff("moderator1", StaffRole.MODERATOR)
+    case = make_approved_case(moderator)
+    misconfigured = StaffUser.objects.create_user(
+        username="dual-only",
+        email="dual-only@example.test",
+        password="A-long-test-password-123!",
+        role=StaffRole.SENIOR_MODERATOR,
+        is_staff=True,
+    )
+    dual_permission = Permission.objects.get(
+        content_type__app_label="staff_accounts",
+        content_type__model="staffuser",
+        codename=StaffCapability.PUBLISH_STORY_DUAL_CONTROL,
+    )
+    misconfigured.user_permissions.add(dual_permission)
+
+    with pytest.raises(PublicationWorkflowError, match="publication permission"):
+        publish_case(
+            case.id,
+            misconfigured,
+            **publication_payload(),
+        )
+
+    assert PublicStory.objects.count() == 0
 
 
 @pytest.mark.django_db
@@ -506,6 +582,9 @@ def test_private_retention_delete_does_not_delete_public_story(client, settings)
     )
     story_id = created.json()["id"]
     durable_credential = PublicRemovalCredential.objects.get(story_id=story_id)
+    record = PublicationRecord.objects.get(public_story_id=story_id)
+    consent_id = record.publication_consent_record_id
+    consent_version = record.publication_consent_text_version
     assert "SELENA-TEST-REMOVAL-CODE" not in durable_credential.verifier
     assert check_password(
         "SELENA-TEST-REMOVAL-CODE",
@@ -515,8 +594,11 @@ def test_private_retention_delete_does_not_delete_public_story(client, settings)
     case.submission.delete()
 
     assert not RawSubmission.objects.filter(pk=submission_id).exists()
+    assert not ConsentRecord.objects.filter(submission_id=submission_id).exists()
     assert PublicStory.objects.filter(pk=story_id, is_active=True).exists()
-    assert PublicationRecord.objects.filter(public_story_id=story_id).exists()
+    record.refresh_from_db()
+    assert record.publication_consent_record_id == consent_id
+    assert record.publication_consent_text_version == consent_version
     durable_credential.refresh_from_db()
     assert check_password(
         "SELENA-TEST-REMOVAL-CODE",
@@ -525,6 +607,13 @@ def test_private_retention_delete_does_not_delete_public_story(client, settings)
 
     client.logout()
     assert client.get(reverse("public-story-detail", args=[story_id])).status_code == 200
+
+
+@pytest.mark.django_db
+def test_public_archive_does_not_offer_withheld_as_filter_value(client):
+    response = client.get(reverse("public-story-list"), {"age_group": "withheld"})
+
+    assert response.status_code == 400
 
 
 @pytest.mark.django_db
@@ -563,17 +652,36 @@ def test_public_list_filters_and_hides_inactive_stories(client):
 
     response = client.get(
         reverse("public-story-list"),
-        {
-            "relationship": "authority",
-            "setting": "workplace",
-            "experience_type": "sexual_comments",
-        },
+        {"relationship": "authority"},
     )
 
     assert response.status_code == 200
     ids = {item["id"] for item in response.json()["results"]}
     assert ids == {str(visible.id)}
     assert str(hidden.id) not in ids
+
+
+@pytest.mark.django_db
+def test_public_archive_rejects_multi_dimension_filtering(client):
+    response = client.get(
+        reverse("public-story-list"),
+        {
+            "relationship": "authority",
+            "setting": "workplace",
+        },
+    )
+
+    assert response.status_code == 400
+
+
+@pytest.mark.django_db
+def test_public_archive_rejects_unknown_filter_parameters(client):
+    response = client.get(
+        reverse("public-story-list"),
+        {"relationship": "authority", "age_exact": "23"},
+    )
+
+    assert response.status_code == 400
 
 
 @pytest.mark.django_db

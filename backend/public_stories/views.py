@@ -6,7 +6,7 @@ from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from staff_accounts.permissions import IsModerator
+from staff_accounts.permissions import CanPublishStory
 
 from .exceptions import PublicationWorkflowError
 from .models import PublicStory, StoryReport
@@ -136,7 +136,7 @@ class StoryReportCreateView(APIView):
 
 
 class PublishModerationCaseView(APIView):
-    permission_classes = [IsModerator]
+    permission_classes = [CanPublishStory]
     parser_classes = [JSONParser]
 
     def post(self, request, case_id):

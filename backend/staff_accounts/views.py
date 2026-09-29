@@ -1,6 +1,7 @@
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from .capabilities import capability_codenames
 from .permissions import IsActiveStaff
 
 
@@ -14,5 +15,6 @@ class StaffMeView(APIView):
                 "id": str(user.pk),
                 "username": user.get_username(),
                 "role": user.role,
+                "capabilities": sorted(capability_codenames(user)),
             }
         )

@@ -6,12 +6,19 @@ from datetime import timedelta
 
 from django.conf import settings
 from django.db import transaction
+from django.db.models import OuterRef, Q, Subquery
 from django.utils import timezone
 
 from submissions.models import ConsentPurpose, ConsentRecord, RawSubmission
 from submissions.policy import PRIVACY_POLICY_VERSION
 
-from .models import AnalyticsContribution, AnalyticsSnapshot
+from .models import (
+    AnalyticsContribution,
+    AnalyticsEligibilityAction,
+    AnalyticsEligibilityEvent,
+    AnalyticsEligibilityReason,
+    AnalyticsSnapshot,
+)
 from .policy import (
     AGE_ORDER,
     CROSS_GROUP_SIZE,
@@ -65,6 +72,55 @@ def create_analytics_contribution(
         source_flow_version=consent_record.source_flow_version,
         retention_expires_at=timezone.now()
         + timedelta(days=settings.ANALYTICS_CONTRIBUTION_RETENTION_DAYS),
+    )
+
+
+MODERATION_ANALYTICS_EXCLUSION_REASONS = {
+    "spam": AnalyticsEligibilityReason.SPAM,
+    "out_of_scope": AnalyticsEligibilityReason.OUT_OF_SCOPE,
+}
+
+
+def exclude_analytics_contribution_for_moderation(
+    submission_id,
+    *,
+    actor,
+    moderation_reason: str,
+) -> AnalyticsEligibilityEvent | None:
+    """
+    Exclude only narrow technical/purpose failures from future snapshots.
+
+    Publication/privacy decisions are not evidence that a survivor's structured
+    contribution is invalid. In particular, this function must not be used to
+    adjudicate credibility.
+    """
+    reason = MODERATION_ANALYTICS_EXCLUSION_REASONS.get(moderation_reason)
+    if reason is None:
+        return None
+    if not AnalyticsContribution.objects.filter(source_submission_id=submission_id).exists():
+        return None
+
+    return AnalyticsEligibilityEvent.objects.create(
+        source_submission_id=submission_id,
+        action=AnalyticsEligibilityAction.EXCLUDE,
+        reason_code=reason,
+        actor=actor,
+    )
+
+
+def restore_analytics_eligibility(
+    submission_id,
+    *,
+    actor,
+) -> AnalyticsEligibilityEvent:
+    if not AnalyticsContribution.objects.filter(source_submission_id=submission_id).exists():
+        raise ValueError("No analytics contribution exists for this submission.")
+
+    return AnalyticsEligibilityEvent.objects.create(
+        source_submission_id=submission_id,
+        action=AnalyticsEligibilityAction.RESTORE,
+        reason_code=AnalyticsEligibilityReason.OPERATOR_CORRECTION,
+        actor=actor,
     )
 
 
@@ -131,9 +187,24 @@ def generate_snapshot() -> AnalyticsSnapshot:
     singles, cross = _new_counters()
     total_count = 0
 
-    contributions = AnalyticsContribution.objects.filter(
-        retention_expires_at__gt=timezone.now()
-    ).iterator(chunk_size=1000)
+    latest_eligibility_action = (
+        AnalyticsEligibilityEvent.objects.filter(
+            source_submission_id=OuterRef("source_submission_id")
+        )
+        .order_by("-created_at", "-id")
+        .values("action")[:1]
+    )
+    contributions = (
+        AnalyticsContribution.objects.filter(retention_expires_at__gt=timezone.now())
+        .annotate(
+            latest_eligibility_action=Subquery(latest_eligibility_action),
+        )
+        .filter(
+            Q(latest_eligibility_action__isnull=True)
+            | ~Q(latest_eligibility_action=AnalyticsEligibilityAction.EXCLUDE)
+        )
+        .iterator(chunk_size=1000)
+    )
 
     for contribution in contributions:
         total_count += 1

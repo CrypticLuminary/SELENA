@@ -6,6 +6,7 @@ from django.core.exceptions import ValidationError
 from django.urls import reverse
 from django.utils import timezone
 
+from analytics.models import AnalyticsEligibilityAction, AnalyticsEligibilityEvent
 from moderation.models import (
     ModerationCase,
     ModerationEvent,
@@ -15,6 +16,7 @@ from moderation.models import (
 from moderation.services import ensure_moderation_case
 from privacy_review.models import PrivacyFinding, PrivacyScreening
 from privacy_review.services import run_privacy_screening
+from staff_accounts.capabilities import apply_role_template
 from staff_accounts.models import StaffRole, StaffUser
 from submissions.models import (
     ConsentPurpose,
@@ -34,13 +36,15 @@ def clear_throttle_cache():
 
 
 def make_staff(username: str, role: str) -> StaffUser:
-    return StaffUser.objects.create_user(
+    user = StaffUser.objects.create_user(
         username=username,
         email=f"{username}@example.test",
         password="A-long-test-password-123!",
         role=role,
         is_staff=True,
     )
+    apply_role_template(user)
+    return user
 
 
 def make_case(story_text: str = "A synthetic narrative with no direct identifiers."):
@@ -103,6 +107,8 @@ def test_statistics_only_submission_creates_no_moderation_case(client):
             publication_consent=False,
             statistics_consent=True,
             story_text="",
+            frequency="",
+            periods=[],
         ),
         content_type="application/json",
     )
@@ -115,7 +121,8 @@ def test_statistics_only_submission_creates_no_moderation_case(client):
 def test_raw_moderation_api_denies_anonymous_analyst_and_superadmin(client):
     case = make_case()
 
-    assert client.get(reverse("moderation-case", args=[case.id])).status_code in {401, 403}
+    anonymous = client.get(reverse("moderation-case", args=[case.id]))
+    assert anonymous.status_code in {401, 403}
 
     for username, role in [
         ("analyst1", StaffRole.ANALYST),
@@ -124,8 +131,25 @@ def test_raw_moderation_api_denies_anonymous_analyst_and_superadmin(client):
     ]:
         user = make_staff(username, role)
         client.force_login(user)
-        assert client.get(reverse("moderation-case", args=[case.id])).status_code == 403
+        denied = client.get(reverse("moderation-case", args=[case.id]))
+        assert denied.status_code == 403
         client.logout()
+
+
+@pytest.mark.django_db
+def test_role_label_alone_does_not_grant_raw_moderation_access(client):
+    case = make_case()
+    unprovisioned = StaffUser.objects.create_user(
+        username="label-only-moderator",
+        email="label-only@example.test",
+        password="A-long-test-password-123!",
+        role=StaffRole.MODERATOR,
+        is_staff=True,
+    )
+    client.force_login(unprovisioned)
+
+    denied = client.get(reverse("moderation-case", args=[case.id]))
+    assert denied.status_code == 403
 
 
 @pytest.mark.django_db
@@ -378,6 +402,51 @@ def test_rejection_requires_bounded_reason_code_and_is_audited(client):
     field_names = {field.name for field in ModerationEvent._meta.fields}
     assert "note" not in field_names
     assert "story_text" not in field_names
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize(
+    ("reason_code", "excluded"),
+    [
+        ("spam", True),
+        ("out_of_scope", True),
+        ("privacy_unresolved", False),
+        ("harmful_or_graphic", False),
+    ],
+)
+def test_moderation_rejection_separates_publication_from_analytics_eligibility(
+    client,
+    reason_code,
+    excluded,
+):
+    created = client.post(
+        reverse("submission-create"),
+        data=public_payload(statistics_consent=True),
+        content_type="application/json",
+    )
+    assert created.status_code == 201
+
+    case = ModerationCase.objects.get()
+    moderator = make_staff(f"moderator-{reason_code}", StaffRole.MODERATOR)
+    client.force_login(moderator)
+    claimed = client.post(
+        reverse("moderation-claim", args=[case.id]),
+        data={},
+        content_type="application/json",
+    )
+    assert claimed.status_code == 200
+
+    rejected = client.post(
+        reverse("moderation-decision", args=[case.id]),
+        data={"decision": "rejected", "reason_code": reason_code},
+        content_type="application/json",
+    )
+
+    assert rejected.status_code == 200
+    events = AnalyticsEligibilityEvent.objects.filter(source_submission_id=case.submission_id)
+    assert events.exists() is excluded
+    if excluded:
+        assert events.latest("created_at").action == AnalyticsEligibilityAction.EXCLUDE
 
 
 @pytest.mark.django_db

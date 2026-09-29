@@ -3,7 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, BarChart3 } from "lucide-react";
 import { getRelatedStories, getStory } from "@/lib/api";
-import type { Story } from "@/types/story";
+import type { StorySummary } from "@/types/story";
 import { StoryMeta } from "@/components/stories/StoryMeta";
 import { ContentWarningGate } from "@/components/stories/ContentWarningGate";
 import { ReportDialog } from "@/components/stories/ReportDialog";
@@ -38,7 +38,7 @@ export default async function StoryDetailPage({
   const story = await getStory(id);
   if (!story) notFound();
 
-  let related: Story[] = [];
+  let related: StorySummary[] = [];
   try {
     related = await getRelatedStories(story);
   } catch {

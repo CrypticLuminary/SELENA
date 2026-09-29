@@ -82,6 +82,17 @@ class PublicationRecord(models.Model):
     source_draft_id = models.UUIDField()
     source_draft_version = models.PositiveIntegerField()
     approval_event_id = models.UUIDField()
+
+    # Minimal durable consent provenance. Raw submissions/ConsentRecords may be
+    # deleted on their own retention schedule while the separately consented
+    # public story remains published.
+    publication_consent_record_id = models.UUIDField()
+    publication_consent_text_version = models.CharField(max_length=64)
+    publication_consent_privacy_policy_version = models.CharField(max_length=64)
+    publication_consent_schema_version = models.CharField(max_length=64)
+    publication_consent_source_flow_version = models.CharField(max_length=64)
+    publication_consent_recorded_at = models.DateTimeField()
+
     moderation_approved_by = models.ForeignKey(
         StaffUser,
         on_delete=models.PROTECT,

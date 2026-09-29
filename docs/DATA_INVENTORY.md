@@ -21,12 +21,12 @@ P3 data receives the strongest access, logging, retention, export, and incident 
 | broad age group at time of experience | P2 | yes in current UI | only after privacy processing | yes, with consent | minors use stronger threshold |
 | broad setting | P2 | yes in current UI | only after privacy processing | yes, with consent | no precise location |
 | experience types | P2 | yes | only after privacy processing | yes, with consent | multi-select |
-| people involved — broad relationship category | P2 | optional | only as an explicitly approved/minimized public-story field | possible future | public story may preserve one submitted top-level category or suppress it; no unrestricted combinations |
+| people involved — broad relationship category | P2 | optional | only as an explicitly approved/minimized public-story field | yes, with statistics consent | statistics-only retains only this broad category; public story may preserve one submitted category or withhold it |
 | relationship detail | P2 | optional | no by default | no by default | can become identifying in combination |
 | involvement role | P2 | optional | no by default | no by default | |
 | approximate age band of person involved | P2 | optional | no by default | no by default | |
-| frequency | P2 | optional | no by default | possible future | requires approved aggregate use |
-| broad periods | P2 | optional | no by default | no by default | never exact dates |
+| frequency | P2 | optional on public-story path | no by default | no in current approved analytics | rejected on statistics-only path |
+| broad periods | P2 | optional on public-story path | no by default | no in current approved analytics | rejected on statistics-only path; never exact dates |
 | raw story text | P3 | conditionally required for public-story path | never raw | no | must pass human privacy/moderation review |
 | publication choice | P1/P2 | yes | no | operational | public story vs statistics-only |
 | publication consent | P2 | yes | no | no | versioned consent record required |
@@ -104,6 +104,16 @@ Raw story bodies remain P3 even while being viewed in moderation.
 
 Public story data must be generated as a separate representation from the raw submission.
 
+Bulk public archive/home/related-story responses are metadata-minimized summaries:
+opaque public ID, alias, standardized warnings, excerpt, broad publication label,
+and editorial-feature flag if that feature is retained. Approved age,
+relationship, setting, experience metadata and full redacted content are disclosed
+only on the deliberately opened individual story detail.
+
+Moderator privacy suppression uses the public-only `withheld` state. It must
+not be represented as `prefer_not`, because that value records the submitter's
+own choice.
+
 Allowed public fields:
 - opaque public story ID unrelated to removal credential
 - generated neutral alias
@@ -115,6 +125,14 @@ Allowed public fields:
 - editorial featured flag if used
 
 Never expose the raw submission object through a public serializer.
+
+## Durable publication provenance
+
+Because raw submissions and their child consent records may expire while a
+consented public story remains online, publication keeps only the minimum durable
+consent provenance required to explain the ongoing publication: opaque consent
+record ID, consent-text/privacy-policy/schema/source-flow versions, and consent
+recorded-at timestamp. Raw narrative is not copied into this provenance record.
 
 ## Reports
 
@@ -154,7 +172,15 @@ Audit logs must not contain raw story bodies, plaintext removal codes, passwords
 
 ## Aggregate analytics
 
-Internal aggregation may process consented P2 structured fields.
+Internal aggregation may process only the current approved statistics-purpose
+projection: broad age group, setting, experience types, and broad relationship
+categories from explicit statistics consent.
+
+Contribution data is immutable. Separate append-only eligibility evidence may
+exclude a contribution from future snapshots only for bounded technical/purpose
+reasons such as spam or out-of-scope material. Publication rejection, privacy
+redaction difficulty, or content sensitivity does not by itself determine
+survivor credibility or aggregate eligibility.
 
 Public output must contain only P0 privacy-processed values:
 - count bands

@@ -58,11 +58,17 @@ export default async function StoriesPage({
 }) {
   const query = await searchParams;
 
-  const initialFilters: StoryFilters = {
-    relationship: validRelationship(first(query.relationship)),
-    setting: validSetting(first(query.setting)),
-    experienceType: validExperience(first(query.experience)),
-  };
+  const relationship = validRelationship(first(query.relationship));
+  const setting = validSetting(first(query.setting));
+  const experienceType = validExperience(first(query.experience));
+
+  const initialFilters: StoryFilters = relationship
+    ? { relationship }
+    : setting
+      ? { setting }
+      : experienceType
+        ? { experienceType }
+        : {};
 
   return (
     <div className="mx-auto max-w-editorial">

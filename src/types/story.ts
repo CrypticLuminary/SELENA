@@ -2,31 +2,39 @@ import type {
   AgeGroup,
   ExperienceType,
   PersonRelationshipCategory,
+  PublicWithheld,
   Setting,
   Warning,
 } from "@/data/categories";
 
 /**
- * Deliberately public, redacted story representation.
- *
- * It mirrors the backend public serializer only. Raw submission identifiers,
- * exact dates, moderation provenance, consent records, and removal credentials
- * do not belong in this type.
+ * Metadata-minimized public representation used by archive/home/related-story
+ * lists. Structured survivor context belongs only on the deliberate detail
+ * surface.
  */
-export interface Story {
+export interface StorySummary {
   id: string;
   alias: string;
-  ageGroup: AgeGroup;
-  relationship: PersonRelationshipCategory;
-  setting: Setting;
-  experienceTypes: ExperienceType[];
   warnings: Warning[];
   excerpt: string;
-  /** Empty on list responses; populated only by the detail endpoint. */
-  content: string;
   /** Broad year-only label supplied by the backend. */
   publishedLabel: string;
   featured: boolean;
+}
+
+/**
+ * Deliberately public, redacted individual-story representation.
+ *
+ * It mirrors the backend detail serializer only. Raw submission identifiers,
+ * exact dates, moderation provenance, consent records, and removal credentials
+ * do not belong in this type.
+ */
+export interface Story extends StorySummary {
+  ageGroup: AgeGroup | PublicWithheld;
+  relationship: PersonRelationshipCategory | PublicWithheld;
+  setting: Setting | PublicWithheld;
+  experienceTypes: (ExperienceType | PublicWithheld)[];
+  content: string;
 }
 
 export interface StoryFilters {
@@ -38,6 +46,6 @@ export interface StoryFilters {
 }
 
 export interface StoryPage {
-  stories: Story[];
+  stories: StorySummary[];
   nextCursor: string | null;
 }

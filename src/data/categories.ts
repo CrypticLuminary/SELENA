@@ -155,6 +155,38 @@ export function warningLabel(value: Warning): string {
   return WARNING_LABELS[value] ?? value;
 }
 
+/**
+ * Public-story-only sentinel used when SELENA withholds submitted metadata for
+ * privacy. This is deliberately distinct from "prefer_not", which records the
+ * submitter's own choice.
+ */
+export const PUBLIC_WITHHELD = "withheld" as const;
+export type PublicWithheld = typeof PUBLIC_WITHHELD;
+
+export function publicAgeGroupLabel(value: AgeGroup | PublicWithheld): string {
+  return value === PUBLIC_WITHHELD ? "Not shown for privacy" : ageGroupLabel(value);
+}
+
+export function publicRelationshipLabel(
+  value: PersonRelationshipCategory | PublicWithheld,
+): string {
+  return value === PUBLIC_WITHHELD
+    ? "Not shown for privacy"
+    : personRelationshipCategoryLabel(value);
+}
+
+export function publicSettingLabel(value: Setting | PublicWithheld): string {
+  return value === PUBLIC_WITHHELD ? "Not shown for privacy" : settingLabel(value);
+}
+
+export function publicExperienceTypeLabel(
+  value: ExperienceType | PublicWithheld,
+): string {
+  return value === PUBLIC_WITHHELD
+    ? "Not shown for privacy"
+    : experienceTypeLabel(value);
+}
+
 /** The four dimensions available for pattern exploration. */
 export const PATTERN_DIMENSIONS = [
   { value: "relationship", label: "Relationship" },

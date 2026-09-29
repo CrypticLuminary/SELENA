@@ -33,7 +33,17 @@ export function StoryControls({
   );
 
   function set<K extends keyof StoryFilters>(key: K, value: StoryFilters[K]) {
-    onChange({ ...filters, [key]: value || undefined });
+    if (key === "sort") {
+      onChange({ ...filters, sort: value as StoryFilters["sort"] });
+      return;
+    }
+
+    if (value) {
+      onChange({ sort: filters.sort, [key]: value });
+      return;
+    }
+
+    onChange({ sort: filters.sort });
   }
 
   return (
@@ -77,8 +87,13 @@ export function StoryControls({
         ) : null}
       </div>
 
+      <p className="text-sm text-ink-faint">
+        Choose one broad category at a time. Patterns, not the story archive,
+        are the place for combined aggregate comparisons.
+      </p>
+
       <fieldset className="grid gap-3 sm:grid-cols-3">
-        <legend className="sr-only">Filter by category</legend>
+        <legend className="sr-only">Filter by one broad category</legend>
         <label className="block">
           <span className="mb-1.5 block text-xs font-medium uppercase tracking-wide text-ink-faint">
             Relationship
