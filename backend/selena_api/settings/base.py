@@ -38,6 +38,7 @@ INSTALLED_APPS = [
     "submissions",
     "privacy_review",
     "moderation",
+    "public_stories",
 ]
 
 MIDDLEWARE = [
@@ -107,6 +108,7 @@ REST_FRAMEWORK = {
     "EXCEPTION_HANDLER": "core.exceptions.safe_exception_handler",
     "DEFAULT_THROTTLE_RATES": {
         "submission": env("SUBMISSION_THROTTLE_RATE", "5/hour"),
+        "story_report": env("STORY_REPORT_THROTTLE_RATE", "10/hour"),
     },
     # Zero means trust REMOTE_ADDR only. Production may set an explicit known
     # proxy count; never leave rate limiting dependent on arbitrary XFF input.
@@ -126,6 +128,8 @@ FILE_UPLOAD_MAX_MEMORY_SIZE = DATA_UPLOAD_MAX_MEMORY_SIZE
 PENDING_SUBMISSION_RETENTION_DAYS = int(env("PENDING_SUBMISSION_RETENTION_DAYS", "90"))
 STATISTICS_ONLY_RETENTION_DAYS = int(env("STATISTICS_ONLY_RETENTION_DAYS", "730"))
 REJECTED_SUBMISSION_RETENTION_DAYS = int(env("REJECTED_SUBMISSION_RETENTION_DAYS", "30"))
+PUBLISHED_RAW_RETENTION_DAYS = int(env("PUBLISHED_RAW_RETENTION_DAYS", "30"))
+PUBLICATION_CONTROL_MODE = env("PUBLICATION_CONTROL_MODE", "disabled")
 DELETION_TOMBSTONE_RETENTION_DAYS = int(env("DELETION_TOMBSTONE_RETENTION_DAYS", "1095"))
 
 LOGGING = {

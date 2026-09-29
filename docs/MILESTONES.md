@@ -64,12 +64,17 @@
 - [x] PostgreSQL-backed authorization, workflow, retention, and failure-mode tests
 
 ## M6 — Published stories
-**Status:** Not started
-- [ ] separate public story representation
-- [ ] public list/detail APIs
-- [ ] content-warning behavior
-- [ ] report flow
-- [ ] tests
+**Status:** Complete on `phase-6-published-stories`; awaiting human PR review
+- [x] separate public story representation with no raw/private foreign key
+- [x] append-only publication provenance using opaque identifiers
+- [x] explicit non-enriching public metadata projection
+- [x] public list/detail APIs with no private provenance or exact publication time
+- [x] opaque UUID archive pagination cursor
+- [x] standardized content-warning publication
+- [x] minimal anonymous report flow with derived rate limiting
+- [x] configurable disabled/single/dual publication control boundary
+- [x] privacy, consent, role, idempotency, removal-survival, and API tests
+- [x] final normal read-only Backend CI after temporary migration workflow removal
 
 ## M7 — Frontend/backend integration
 **Status:** Not started
@@ -108,7 +113,7 @@
 **Status:** Not started (frontend foundations established early in M1)
 - [x] GitHub Actions frontend CI foundation
 - [x] frontend lint/typecheck/privacy/build gates
-- [ ] backend tests/migration checks
+- [x] backend PostgreSQL tests/migration/deploy-check foundation
 - [x] CodeQL/static analysis foundation
 - [ ] complete dependency + secret-scanning posture (npm audit/Dependabot already active; GitHub Dependency Review awaits Dependency Graph)
 - [ ] browser accessibility tests

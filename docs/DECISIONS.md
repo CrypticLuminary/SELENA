@@ -78,6 +78,16 @@ Preferred model for a sensitive product: Moderator reviews/redacts, Senior Moder
 
 Production keeps append-only/versioned consent records containing purpose, granted/declined state, text version, policy version, schema version, and timestamp. Historical consent is never silently broadened.
 
+## DEC-013 — Publication is disabled until governance mode is approved
+**Status:** Accepted as engineering safety baseline
+
+The backend defaults `PUBLICATION_CONTROL_MODE` to `disabled`. Code may support
+the proposed single-moderator and dual-control models, but neither becomes active
+merely because the implementation exists.
+
+**Reason:** Implementing both policy options should not silently resolve DEC-011
+or make public release possible before governance approval.
+
 ## Pending decisions
 - approve/modify DEC-010 retention periods
 - approve DEC-011 publication-control model

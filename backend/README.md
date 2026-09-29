@@ -1,6 +1,9 @@
 # SELENA Backend
 
-This backend currently includes the Phase 2–5 foundations: staff authentication, anonymous private submissions, local privacy screening, and a permission-tested human moderation workflow. Public story publication is still deliberately absent.
+The backend currently includes the Phase 2–6 foundations: staff authentication,
+anonymous private submissions, local privacy screening, human moderation, and a
+deliberately separate public-story representation. Publication is disabled by
+default until the production control model is explicitly approved/configured.
 
 ## Local setup
 
@@ -42,65 +45,97 @@ pip-audit
 - do not log request bodies containing survivor narratives;
 - do not log plaintext removal/recovery codes;
 - public submitters do not receive accounts;
-- DRF defaults to authenticated access; future public endpoints must explicitly opt into `AllowAny`;
+- DRF defaults to authenticated access; public endpoints explicitly opt into `AllowAny`;
 - raw submissions remain private and write-only from the public side;
-- public story publication/API is deliberately absent through Phase 5.
+- raw/moderated/public representations are separate;
+- public metadata may be preserved, reduced, or suppressed but never enriched;
+- detailed relationship fields remain private by default;
+- publication is disabled by default and requires explicit governance configuration.
 
-See the root `docs/` governance and threat-model documents before adding production data.
+See the root `docs/` governance and threat-model documents before changing
+production data use.
 
 ## CI
 
-`.github/workflows/backend-ci.yml` runs the same foundation checks against a PostgreSQL service on every backend change. CI is intentionally read-only with respect to repository contents.
+`.github/workflows/backend-ci.yml` runs the backend quality/security baseline
+against PostgreSQL. Normal CI is read-only with respect to repository contents.
+Short-lived migration/formatter workflows are removed immediately after use.
 
 ## Retention maintenance
-
-Phase 3 adds two explicit maintenance commands:
 
 ```bash
 python manage.py purge_expired_submissions
 python manage.py purge_expired_tombstones
 ```
 
-The first removes expired raw submissions only after creating minimal deletion
-tombstones, so a later backup restore can replay prior deletions before service
-is reopened. Tombstones contain only opaque submission IDs and deletion
-metadata; they do not contain survivor narratives or structured submission
-fields.
+The first removes expired private submissions only after creating minimal
+deletion tombstones so a later backup restore can replay prior deletions before
+service is reopened. Tombstones contain only opaque submission IDs and deletion
+metadata.
 
-The second removes tombstones after the configured tombstone retention period.
-Production scheduling for these commands belongs to the deployment/operations
-milestone.
+The second removes tombstones after their configured retention period.
+Production scheduling belongs to the deployment/operations milestone.
 
 ## Local privacy screening
 
-Every new anonymous submission now receives a versioned local privacy-screening
-run. The screening layer is deliberately assistive:
+Every new anonymous submission receives a versioned local privacy-screening run.
 
-- raw narratives stay inside the SELENA backend;
-- no external AI/moderation service receives survivor text;
-- only finding category, rule ID, and character offsets are stored;
-- matched text/snippets are not duplicated into screening records;
-- `no_automated_flags` is **not** publication approval;
-- detector failures produce an error screening state and still require human review.
+- raw narratives stay inside SELENA;
+- no external AI/moderation provider receives survivor text;
+- findings store only category, rule ID, and character offsets;
+- matched snippets are not duplicated into screening records;
+- `no_automated_flags` is not publication approval;
+- detector failure fails toward human review.
 
-Current deterministic rules can flag common emails, phone-like values, URLs,
-social handles, precise numeric dates, street-address-like text, and explicit
-self-name phrases. These rules can miss identifiers and can produce false
-positives. Human privacy/moderation review remains mandatory before publication.
+The deterministic rules are assistive and can miss identifiers or create false
+positives. Human privacy/moderation review remains mandatory.
 
 ## Moderation boundary
 
-Public-path submissions with current publication consent enter a private moderation
-case. Routine raw-content access is limited server-side to Moderator and Senior
-Moderator roles; Analyst, Operations/Safety, and Superadmin roles do not receive
-raw moderation access merely by being staff.
+Public-path submissions with current publication consent enter a private
+moderation case. Routine raw-content access is limited server-side to Moderator
+and Senior Moderator roles.
 
 Moderation uses append-only redaction drafts and audit events. Approval requires
-a current publication consent, an assigned moderator, a redaction draft, and a
-successful local privacy check of that draft. Approval is still an internal
-state only: Phase 5 does not create a public story or public API representation.
+current publication consent, an assigned moderator, a redaction draft, and a
+successful local privacy check. Moderation approval alone does not publish.
 
-Escalated cases require a Senior Moderator to reclaim them. The final production
-policy for single-review versus dual-control publication remains a governance
-decision for the later publication boundary.
+## Public story boundary
 
+Phase 6 adds the separate `public_stories` zone.
+
+- PublicStory has no foreign key to RawSubmission or ModerationCase.
+- Only approved redacted text is copied.
+- Public age/setting values may only match the submitted broad value or be
+  suppressed to `prefer_not`.
+- Public experience values may only be a subset of submitted broad values or be
+  suppressed.
+- Public relationship is limited to an already-submitted top-level category or
+  `prefer_not`; private relationship detail is never promoted automatically.
+- Minimal publication provenance is append-only, stores opaque IDs, and survives
+  future public-story deletion.
+- The original removal code itself is never copied; only its slow salted verifier
+  is carried to the public-story zone so removal authority survives raw retention.
+- A removed publication cannot be silently recreated from its old moderation
+  case.
+- Public APIs expose a broad publication-year label, not the exact timestamp.
+- Archive pagination uses the random public-story UUID as the cursor rather than
+  embedding the timestamp.
+- Anonymous story reports accept bounded reason codes only and store no reporter
+  identity or free-text narrative.
+
+`PUBLICATION_CONTROL_MODE`:
+- `disabled` — safe default;
+- `single_moderator` — authorized moderation role may publish an approved case;
+- `dual_control` — a different Senior Moderator performs final publication.
+
+Production must remain `disabled` until the owner/governance decision is
+approved.
+
+Public endpoints:
+- `GET /api/stories/`
+- `GET /api/stories/{public_story_id}/`
+- `POST /api/stories/{public_story_id}/reports/`
+
+Protected publication endpoint:
+- `POST /api/publication/cases/{moderation_case_id}/publish/`
