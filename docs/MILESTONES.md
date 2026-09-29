@@ -23,13 +23,15 @@
 - [x] Establish repeatable lint/typecheck/privacy/build/dependency-audit/CodeQL baseline
 
 ## M2 — Backend foundation
-**Status:** Not started
-- [ ] Django/DRF project
-- [ ] PostgreSQL
-- [ ] environment configuration
-- [ ] baseline logging
-- [ ] staff auth foundation
-- [ ] backend test infrastructure
+**Status:** Complete on `phase-2-backend-foundation`; awaiting human PR review
+- [x] Django/DRF project
+- [x] PostgreSQL
+- [x] environment configuration
+- [x] privacy-aware baseline logging
+- [x] staff auth foundation
+- [x] backend test infrastructure
+- [x] health/readiness endpoints
+- [x] backend CI + dependency audit
 
 ## M3 — Anonymous submission
 **Status:** Not started
