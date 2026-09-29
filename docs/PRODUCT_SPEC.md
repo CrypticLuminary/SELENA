@@ -30,9 +30,11 @@ No public user accounts, followers, likes, reactions, comments, DMs, engagement 
 ## User types
 - **Submitter:** no account required; submits anonymously and uses secure removal/recovery mechanism.
 - **Reader:** sees only published/redacted stories and approved aggregates.
-- **Moderator:** reviews/redacts/approves/rejects/publishes and handles reports/removal requests.
+- **Moderator:** reviews/redacts/approves/rejects and handles reports within assigned permissions. Final publication/removal authority follows the approved staff-role model.
+- **Senior Moderator (if enabled):** performs final publication/unpublication and verified removal actions under the two-step model.
 - **Analyst:** accesses approved privacy-safe aggregates, not unrestricted raw submissions.
-- **Superadmin:** manages staff/system administration under least privilege.
+- **Operations/Safety:** handles abuse, incident, and verified removal workflows using minimum necessary access.
+- **Superadmin:** manages staff/system administration under least privilege; system administration does not imply routine raw-story access.
 
 ## Story lifecycle
 `RECEIVED -> PROCESSING -> NEEDS_REVIEW -> REDACTION_REQUIRED/APPROVED/REJECTED -> PUBLISHED -> REMOVED`
@@ -50,3 +52,15 @@ A submission must never become public automatically.
 
 ## MVP definition of done
 Anonymous submission, moderation/redaction, public-story separation, secure removal requests, reporting, server-enforced privacy-safe analytics, staff permissions, CI/security gates, backup/restore procedures, incident procedures, accessibility, and production smoke tests all work.
+
+
+## Governance dependencies
+Before production launch, implementation must conform to the approved versions of:
+- `DATA_INVENTORY.md`
+- `THREAT_MODEL.md`
+- `RETENTION_AND_DELETION.md`
+- `CONSENT_MODEL.md`
+- `STAFF_ROLES.md`
+- `INCIDENT_RESPONSE.md`
+
+Open governance decisions must be recorded in `DECISIONS.md`; engineering code must not silently settle them.

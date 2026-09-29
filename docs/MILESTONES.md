@@ -1,15 +1,17 @@
 # SELENA — Milestone Tracker
 
 ## M0 — Production specification and threat model
-**Status:** In progress
+**Status:** Engineering/specification complete; governance approvals pending
 - [x] Define production mission and MVP boundaries
 - [x] Add baseline architecture/privacy/security documentation
-- [ ] Complete data inventory
-- [ ] Complete threat model
-- [ ] Approve retention/deletion policy
-- [ ] Define consent/versioning model
-- [ ] Define final staff role matrix
-- [ ] Define incident-response ownership
+- [x] Complete data inventory
+- [x] Complete threat model
+- [ ] Approve retention/deletion policy (specific proposal documented)
+- [x] Define consent/versioning model
+- [x] Define staff role matrix
+- [ ] Approve final publication-control model
+- [ ] Assign incident-response owners/contact channel
+- [ ] Complete pre-launch incident tabletop exercise
 
 ## M1 — Existing frontend production audit
 **Status:** Complete on `phase-1-production-audit`; awaiting human PR review

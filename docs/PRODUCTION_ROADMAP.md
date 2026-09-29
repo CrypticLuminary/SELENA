@@ -4,9 +4,11 @@
 Move SELENA from its current frontend-only synthetic-data prototype to a production-ready, privacy-first platform without weakening its survivor-centered design.
 
 ## Phase 0 — Product, privacy, governance, threat model
+**Current status:** engineering/specification drafted; owner approvals remain.
+
 Deliver production scope, data inventory, threat model, consent model, retention/deletion policy, role/permission model, and incident-response ownership.
 
-**Exit gate:** no unresolved ambiguity about what data is collected, who can access it, how long it is retained, and how it becomes public.
+**Exit gate:** no unresolved ambiguity about what data is collected, who can access it, how long it is retained, and how it becomes public. Current open gates are the proposed retention periods, publication-control model, and named incident-response ownership.
 
 ## Phase 1 — Frontend production audit
 Audit the current Next.js code, dependencies, accessibility, performance, error handling, privacy assumptions, and test coverage.
