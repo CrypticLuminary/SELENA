@@ -17,6 +17,7 @@ from submissions.models import (
     RawSubmission,
     SubmissionDeletionReason,
     SubmissionDeletionTombstone,
+    SubmissionState,
 )
 from submissions.policy import (
     PUBLICATION_CONSENT_VERSION,
@@ -78,7 +79,7 @@ def test_public_submission_is_write_only_and_returns_one_time_removal_code(clien
     submission = RawSubmission.objects.get()
     credential = submission.removal_credential
 
-    assert submission.state == "received"
+    assert submission.state == SubmissionState.NEEDS_REVIEW
     assert submission.story_text.startswith("A synthetic test narrative")
     assert body["removal_code"] not in credential.verifier
     assert check_password(body["removal_code"], credential.verifier)
