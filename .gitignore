@@ -38,4 +38,5 @@ backend/.ruff_cache/
 backend/.coverage
 backend/htmlcov/
 backend/.env
+backend/*.egg-info/
 *.pyc

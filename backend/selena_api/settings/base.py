@@ -35,6 +35,7 @@ INSTALLED_APPS = [
     "rest_framework",
     "core",
     "staff_accounts",
+    "submissions",
 ]
 
 MIDDLEWARE = [
@@ -102,6 +103,12 @@ REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": ["rest_framework.authentication.SessionAuthentication"],
     "DEFAULT_RENDERER_CLASSES": ["rest_framework.renderers.JSONRenderer"],
     "EXCEPTION_HANDLER": "core.exceptions.safe_exception_handler",
+    "DEFAULT_THROTTLE_RATES": {
+        "submission": env("SUBMISSION_THROTTLE_RATE", "5/hour"),
+    },
+    # Zero means trust REMOTE_ADDR only. Production may set an explicit known
+    # proxy count; never leave rate limiting dependent on arbitrary XFF input.
+    "NUM_PROXIES": int(env("DRF_NUM_PROXIES", "0")),
 }
 
 SESSION_COOKIE_HTTPONLY = True
@@ -114,6 +121,9 @@ SECURE_CROSS_ORIGIN_OPENER_POLICY = "same-origin"
 
 DATA_UPLOAD_MAX_MEMORY_SIZE = int(env("DJANGO_MAX_REQUEST_BYTES", str(256 * 1024)))
 FILE_UPLOAD_MAX_MEMORY_SIZE = DATA_UPLOAD_MAX_MEMORY_SIZE
+PENDING_SUBMISSION_RETENTION_DAYS = int(env("PENDING_SUBMISSION_RETENTION_DAYS", "90"))
+STATISTICS_ONLY_RETENTION_DAYS = int(env("STATISTICS_ONLY_RETENTION_DAYS", "730"))
+DELETION_TOMBSTONE_RETENTION_DAYS = int(env("DELETION_TOMBSTONE_RETENTION_DAYS", "1095"))
 
 LOGGING = {
     "version": 1,

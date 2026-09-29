@@ -34,13 +34,15 @@
 - [x] backend CI + dependency audit
 
 ## M3 — Anonymous submission
-**Status:** Not started
-- [ ] submission model/API
-- [ ] server-side validation
-- [ ] secure public identifiers
-- [ ] secure removal-code generation/storage
-- [ ] rate limiting
-- [ ] tests
+**Status:** Complete on `phase-3-anonymous-submission`; awaiting human PR review
+- [x] write-only anonymous submission model/API
+- [x] strict server-side validation and backend taxonomy
+- [x] opaque private identifiers; no public raw identifier/detail API
+- [x] secure one-time removal-code generation/verifier storage
+- [x] separate immutable/versioned publication + statistics consent
+- [x] HMAC-derived anonymous rate limiting with production Redis
+- [x] retention purge with restoration-safe deletion tombstones
+- [x] PostgreSQL-backed tests, migration checks, deploy checks, and dependency audit
 
 ## M4 — Privacy/PII preprocessing
 **Status:** Not started
