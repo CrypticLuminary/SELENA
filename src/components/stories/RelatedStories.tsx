@@ -2,7 +2,7 @@ import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import {
   ageGroupLabel,
-  relationshipLabel,
+  personRelationshipCategoryLabel,
   settingLabel,
 } from "@/data/categories";
 import type { Story } from "@/types/story";
@@ -33,7 +33,7 @@ export function RelatedStories({ stories }: { stories: Story[] }) {
                 {story.alias}
               </span>
               <span className="mt-1 text-xs text-ink-faint">
-                {ageGroupLabel(story.ageGroup)} · {relationshipLabel(story.relationship)}{" "}
+                {ageGroupLabel(story.ageGroup)} · {personRelationshipCategoryLabel(story.relationship)}{" "}
                 · {settingLabel(story.setting)}
               </span>
               <span className="mt-3 inline-flex items-center gap-1 text-sm font-medium text-accent">

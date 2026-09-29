@@ -1,13 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { getStories } from "@/lib/mock-api";
+import { useEffect, useRef, useState } from "react";
+import { getStoriesPage } from "@/lib/api";
 import type { Story, StoryFilters } from "@/types/story";
 import { StoryControls } from "./StoryControls";
 import { StoryGrid } from "./StoryGrid";
 import { StoryCardSkeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ErrorState } from "@/components/ui/error-state";
+import { Button } from "@/components/ui/button";
 
 type Status = "loading" | "ready" | "error";
 
@@ -18,24 +19,45 @@ export function StoriesArchive({
 }) {
   const [filters, setFilters] = useState<StoryFilters>(initialFilters);
   const [stories, setStories] = useState<Story[]>([]);
+  const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [status, setStatus] = useState<Status>("loading");
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [loadMoreError, setLoadMoreError] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
+  const generation = useRef(0);
 
   useEffect(() => {
-    let active = true;
-    getStories(filters)
-      .then((result) => {
-        if (!active) return;
-        setStories(result);
+    const requestGeneration = ++generation.current;
+
+    getStoriesPage(filters)
+      .then((page) => {
+        if (generation.current !== requestGeneration) return;
+        setStories(page.stories);
+        setNextCursor(page.nextCursor);
         setStatus("ready");
       })
       .catch(() => {
-        if (active) setStatus("error");
+        if (generation.current === requestGeneration) setStatus("error");
       });
-    return () => {
-      active = false;
-    };
   }, [filters, reloadKey]);
+
+  async function loadMore() {
+    if (!nextCursor || loadingMore) return;
+
+    const requestGeneration = generation.current;
+    setLoadingMore(true);
+    setLoadMoreError(false);
+    try {
+      const page = await getStoriesPage(filters, nextCursor);
+      if (generation.current !== requestGeneration) return;
+      setStories((current) => [...current, ...page.stories]);
+      setNextCursor(page.nextCursor);
+    } catch {
+      if (generation.current === requestGeneration) setLoadMoreError(true);
+    } finally {
+      if (generation.current === requestGeneration) setLoadingMore(false);
+    }
+  }
 
   return (
     <div className="mt-8">
@@ -43,6 +65,7 @@ export function StoriesArchive({
         filters={filters}
         onChange={(next) => {
           setStatus("loading");
+          setLoadMoreError(false);
           setFilters(next);
         }}
       />
@@ -61,7 +84,8 @@ export function StoriesArchive({
             title="We couldn't load these experiences right now."
             onRetry={() => {
               setStatus("loading");
-              setReloadKey((k) => k + 1);
+              setLoadMoreError(false);
+              setReloadKey((key) => key + 1);
             }}
           />
         ) : stories.length === 0 ? (
@@ -76,6 +100,24 @@ export function StoriesArchive({
               {stories.length === 1 ? "story" : "stories"}.
             </p>
             <StoryGrid stories={stories} />
+
+            {nextCursor ? (
+              <div className="mt-8 text-center">
+                <Button
+                  variant="secondary"
+                  onClick={loadMore}
+                  disabled={loadingMore}
+                >
+                  {loadingMore ? "Loading…" : "Load more stories"}
+                </Button>
+                {loadMoreError ? (
+                  <p className="mt-3 text-sm text-caution" role="alert">
+                    We couldn&rsquo;t load the next page. Your current stories
+                    are still here; you can try again.
+                  </p>
+                ) : null}
+              </div>
+            ) : null}
           </>
         )}
       </div>

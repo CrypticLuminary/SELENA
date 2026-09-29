@@ -15,7 +15,7 @@ const OPTIONS = [
   {
     value: "statistics_only",
     label: "Contribute to anonymous statistics only",
-    hint: "No story text is ever shown. Only your broad answers may inform aggregate patterns.",
+    hint: "Your story text is not sent on this path. Only your broad answers may inform aggregate patterns.",
   },
 ];
 

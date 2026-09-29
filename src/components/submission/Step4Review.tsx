@@ -158,16 +158,18 @@ export function Step4Review() {
           </p>
         ) : (
           <p>
-            No story text will be shown. Only your broad, structured answers may
-            inform aggregate patterns.
+            Your story text will not be sent with this statistics-only
+            submission. Only your broad, structured answers may inform aggregate
+            patterns.
           </p>
         )}
       </Callout>
 
       <Callout tone="info">
-        When you submit, you&rsquo;ll receive an anonymous removal code. Save it
-        if you might want to request removal later — no account is needed. (In
-        this demo build, nothing is stored and the code is illustrative.)
+        When you submit, you&rsquo;ll receive a one-time anonymous removal
+        code. Save it somewhere private if you might want to request removal
+        later — no account is needed, and Selena cannot recover the plaintext
+        code for you after the confirmation is gone.
       </Callout>
     </div>
   );

@@ -2,7 +2,7 @@
   "name": "selena",
   "version": "0.1.0",
   "private": true,
-  "description": "SELENA — a survivor-centered platform for anonymous stories and privacy-safe aggregate patterns. V1 (frontend-only, synthetic data).",
+  "description": "SELENA — privacy-first anonymous survivor stories, human moderation, and privacy-safe aggregate patterns.",
   "scripts": {
     "dev": "next dev",
     "build": "next build",

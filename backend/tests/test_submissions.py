@@ -167,6 +167,25 @@ def test_statistics_only_can_submit_without_story_text(client):
 
 
 @pytest.mark.django_db
+def test_statistics_only_rejects_story_text_to_minimize_private_data(client):
+    payload = public_payload(
+        publication_choice="statistics_only",
+        publication_consent=False,
+        statistics_consent=True,
+        story_text="This narrative must not be stored on the statistics-only path.",
+    )
+
+    response = client.post(
+        reverse("submission-create"),
+        data=payload,
+        content_type="application/json",
+    )
+
+    assert response.status_code == 400
+    assert RawSubmission.objects.count() == 0
+
+
+@pytest.mark.django_db
 def test_public_path_requires_publication_consent_and_story(client):
     missing_consent = client.post(
         reverse("submission-create"),

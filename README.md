@@ -1,92 +1,172 @@
-# Selena — V1
+# SELENA
 
-A survivor-centered platform for sharing experiences **anonymously**, and for
-understanding the **privacy-safe patterns** among submissions. Built calm,
-non-sensational, and mobile-first.
+SELENA is a privacy-first, survivor-centered platform for anonymous experience
+sharing, human-reviewed public stories, and privacy-safe aggregate patterns.
 
-> **This is V1: frontend-only with synthetic demo data.** Every story and figure
-> is fictional. No backend, no database, no real submissions. The architecture
-> is deliberately shaped so a Django/DRF backend can replace the mock layer with
-> almost no component changes.
+The production path is deliberately split into separate data zones:
 
-## Getting started
+```text
+anonymous submission
+        |
+        v
+private raw submission
+        |
+        v
+privacy screening + human moderation
+        |
+        v
+separate redacted public story
+```
+
+Raw submissions are never serialized directly by a public read endpoint.
+
+## Current implementation
+
+Through Phase 7 the repository includes:
+
+- Next.js + TypeScript survivor-facing frontend;
+- Django + Django REST Framework backend;
+- PostgreSQL-backed private submission storage;
+- anonymous, write-only submission API;
+- one-time anonymous removal credential with verifier-only storage;
+- local identifying-detail screening;
+- permission-tested human moderation;
+- separate public-story representation;
+- public story list/detail APIs;
+- bounded anonymous story reporting;
+- real frontend/backend integration for stories, submissions, and reports;
+- GitHub Actions frontend and backend quality/security gates.
+
+The **Patterns** area is still intentionally backed by synthetic privacy-safe
+fixtures. Server-enforced analytics belongs to Phase 8.
+
+Publication itself remains **disabled by default** until the production
+publication-control governance decision is approved.
+
+## Privacy invariants
+
+- No public account is required to submit.
+- The submission form has no name, email, phone, exact address, exact event date,
+  or exact age field.
+- Statistics consent is opt-in.
+- On the statistics-only path, story text is **not sent to the backend**; the
+  backend also rejects narrative text on that path.
+- Public stories use only broad relationship categories. Detailed relationship
+  context remains private by default.
+- Public APIs do not expose raw submission IDs, moderation provenance, exact
+  publication timestamps, or removal credentials.
+- Public archive pagination uses an opaque public-story UUID cursor.
+- Report intake accepts bounded reason codes only; no reporter identity or
+  free-text report narrative is collected.
+- The plaintext removal code is returned once. The frontend holds it only for
+  the confirmation handoff and clears that ephemeral value after reading it or
+  on Quick Exit.
+- Quick Exit cannot erase browser/network/device history; the Safety page states
+  those limits explicitly.
+
+See `docs/PRIVACY.md`, `docs/SECURITY.md`, `docs/THREAT_MODEL.md`, and
+`docs/DATA_INVENTORY.md` before changing a sensitive boundary.
+
+## Local development
+
+### Backend
+
+Requirements: Python 3.12+ and PostgreSQL.
 
 ```bash
-npm install
+cd backend
+python -m venv .venv
+# activate the virtual environment
+pip install -e ".[dev]"
+docker compose up -d postgres
+python manage.py migrate
+python manage.py runserver
+```
+
+Django defaults locally to `http://127.0.0.1:8000`.
+
+### Frontend
+
+Copy the frontend environment example if you need non-default routing:
+
+```bash
+cp .env.example .env.local
+npm ci
 npm run dev
 ```
 
-Then open http://localhost:3000.
+Next.js defaults locally to `http://localhost:3000`.
 
-Other scripts: `npm run build` (production build), `npm run start` (serve the
-build), `npm run lint`.
+Browser API requests stay same-origin under `/api/*` and are proxied by
+Next.js to Django. Server-rendered frontend requests use server-only backend
+environment variables; backend routing is never configured with a
+`NEXT_PUBLIC_*` variable.
 
-Requires Node 18.18+ (Node 20+ recommended).
+## Repository layout
 
-## Tech stack
+```text
+backend/
+  staff_accounts/
+  submissions/
+  privacy_review/
+  moderation/
+  public_stories/
+  selena_api/
+  tests/
 
-Next.js (App Router) · TypeScript · Tailwind CSS · Framer Motion (subtle) ·
-Lucide React · Recharts (bar charts) · custom SVG (relationship bubbles) ·
-React Hook Form + Zod. Type: **Fraunces** (editorial serif display, via
-`next/font/google`) + **Geist Sans** (UI/body) + **Geist Mono** (data). A
-tokenized type scale, editorial width system, and WCAG-AA palette live in
-`tailwind.config.ts` + `src/app/globals.css`.
-
-## How it's organized
-
-```
 src/
-  app/           Routes: / stories /stories/[id] patterns share share/success about methodology safety
-  components/    layout · stories · patterns · submission · home · ui
-  data/          categories.ts (canonical vocab) · stories.ts (synthetic) · patterns.ts (privacy-safe aggregates)
-  lib/           mock-api.ts (THE data boundary) · privacy.ts (policy config) · utils.ts · submission-schema.ts
-  types/         story.ts · patterns.ts · submission.ts
+  app/
+  components/
+  data/
+    categories.ts
+    patterns.ts        # temporary Phase 8 synthetic aggregates only
+  lib/
+    api.ts             # real stories/submissions/reports client
+    mock-api.ts        # temporary pattern-only boundary
+    ephemeral.ts       # one-time receipt cleanup
+    privacy.ts
+    submission-schema.ts
+  types/
+
+docs/
+  architecture, privacy, security, threat model, decisions, milestones, ...
 ```
 
-## The three load-bearing ideas
+The old synthetic public story dataset has been removed. Components must not
+reintroduce a second public-story source of truth.
 
-1. **One data boundary.** Components import only from `lib/mock-api.ts` (async,
-   Promise-returning). To go live, reimplement those functions with `fetch()` to
-   your DRF endpoints — components don't change. Nothing imports `data/*`
-   directly except the mock API (and `data/categories.ts`, the shared vocab).
+## Validation
 
-2. **Privacy lives in the backend, never in components.** The mock aggregates in
-   `data/patterns.ts` are authored as if they already passed a server-side
-   privacy engine: coarse **count bands** (never exact counts), relative scales,
-   and **suppressed** groups. Policy is centralized in `lib/privacy.ts`
-   (min group 10, sensitive/minor 20, max 2 dimensions, bands on, geo off). The
-   frontend only renders what it's handed.
+Frontend:
 
-3. **Accessible + careful by construction.** Every chart has a list/table
-   alternative; story text is gated behind content warnings; figures are always
-   ranges; language stays honest ("submissions to this platform, not
-   prevalence"; "we minimize identifying information", never "100% anonymous").
+```bash
+npm run lint
+npm run typecheck
+npm run check:privacy
+npm run build
+npm run audit:prod
+```
 
-## Notable behaviors
+Backend:
 
-- **Quick Exit** — a "Leave this site" control (and Shift+Esc) in the header and
-  footer that redirects to a neutral page. The Safety page explains its limits
-  honestly (it can't erase browser history).
-- **Submission wizard** — 4 steps, in-memory only (no localStorage of story
-  text). The success page shows a clearly-labeled *demo* removal code.
-- **Patterns** — relationship bubbles (custom SVG) + age/setting/experience bar
-  charts, a two-dimension explorer (max 2 dims, predefined combos only), and
-  honest "not available yet" states where a breakdown is suppressed.
+```bash
+cd backend
+ruff check .
+ruff format --check .
+python manage.py makemigrations --check --dry-run
+python manage.py check
+pytest
+pip-audit
+```
 
-## What is intentionally NOT in V1
+GitHub Actions runs these foundations on phase branches. Backend CI uses
+PostgreSQL and also runs production deployment checks.
 
-No comments, likes, reactions, followers, DMs, engagement rankings, researcher
-portal, arbitrary analytics API, geographic drill-down, exact dates/locations,
-real-time stats, ML moderation, or AI conclusions about people or society. The
-moderation pipeline is represented conceptually in copy/architecture only.
+## Product boundaries
 
-## Replacing the mock data with a real backend (later)
+SELENA intentionally does not add public comments, likes, reactions, follower
+graphs, DMs, engagement rankings, arbitrary public analytics queries, exact
+geographic drill-down, or exact public counts.
 
-- Implement the functions in `src/lib/mock-api.ts` as `fetch()` calls to
-  predefined, privacy-enforcing endpoints (e.g. `/api/patterns/relationships`).
-- Keep the `types/` contracts identical — especially `PatternCell` (bands +
-  scale, never exact counts).
-- Enforce every rule in `lib/privacy.ts` **server-side**. The frontend must
-  never receive raw counts or decide what is safe to show.
-
-All content in this build is fictional demonstration material.
+The implementation roadmap and current phase status live in
+`docs/MILESTONES.md`.

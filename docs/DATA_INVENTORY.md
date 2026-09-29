@@ -21,7 +21,7 @@ P3 data receives the strongest access, logging, retention, export, and incident 
 | broad age group at time of experience | P2 | yes in current UI | only after privacy processing | yes, with consent | minors use stronger threshold |
 | broad setting | P2 | yes in current UI | only after privacy processing | yes, with consent | no precise location |
 | experience types | P2 | yes | only after privacy processing | yes, with consent | multi-select |
-| people involved — broad relationship category | P2 | optional | never directly unless separately approved/redacted | possible future | do not expose unrestricted combinations |
+| people involved — broad relationship category | P2 | optional | only as an explicitly approved/minimized public-story field | possible future | public story may preserve one submitted top-level category or suppress it; no unrestricted combinations |
 | relationship detail | P2 | optional | no by default | no by default | can become identifying in combination |
 | involvement role | P2 | optional | no by default | no by default | |
 | approximate age band of person involved | P2 | optional | no by default | no by default | |
@@ -72,10 +72,15 @@ If network metadata is required for rate limiting or abuse defense, prefer short
 ## Removal/recovery mechanism
 
 Production must store:
-- opaque submission reference
+- opaque submission reference while the private submission exists
 - salted/slow hash or otherwise securely derived verifier of the removal code
 - issuance/version metadata
 - attempt/rate-limit state
+
+If a public story outlives the raw submission, only the verifier/required
+issuance metadata may cross that retention boundary so anonymous removal
+authority survives. It remains P3, must never be public-serialized, and must not
+recreate a link to raw story content.
 
 Production must **not** routinely store or log the plaintext removal code after issuance.
 
@@ -114,11 +119,14 @@ Never expose the raw submission object through a public serializer.
 ## Reports
 
 Public report payload:
-- public story ID
-- standardized report reason
-- optional free-text note
+- public story ID in the request path
+- standardized bounded report reason
 
-The note is P2 and may contain P3 information if the reporter types identifying material. Do not log it routinely.
+SELENA does not collect a public report free-text note in the current production
+baseline. This is deliberate data minimization: an open text field could invite
+new P2/P3 identifying or survivor content into a reporting channel that does not
+need it. Adding report free text later requires an explicit inventory/governance
+decision, retention rule, moderation purpose, and logging review.
 
 ## Staff accounts
 
