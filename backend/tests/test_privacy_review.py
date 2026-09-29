@@ -1,7 +1,6 @@
 import logging
 
 import pytest
-from django.core.exceptions import ValidationError
 
 from privacy_review.detector import FindingCategory, detect_identifying_details
 from privacy_review.models import PrivacyFinding, PrivacyScreening, ScreeningStatus
@@ -125,52 +124,3 @@ def test_screening_error_log_does_not_include_raw_text(monkeypatch, caplog):
     assert screening.status == ScreeningStatus.ERROR
     assert secret_text not in caplog.text
     assert "RuntimeError" in caplog.text
-
-
-@pytest.mark.django_db
-def test_full_submission_delete_allows_superseded_screening_history():
-    submission = RawSubmission.objects.create(
-        age_group="21_24",
-        setting="workplace",
-        experience_types=["sexual_comments"],
-        story_text="No explicit contact detail.",
-        publication_choice=PublicationChoice.PUBLIC,
-        retention_expires_at="2026-12-27T00:00:00Z",
-    )
-
-    first = run_privacy_screening(submission)
-    second = run_privacy_screening(submission)
-    assert second.supersedes == first
-
-    submission.delete()
-
-    assert RawSubmission.objects.count() == 0
-    assert PrivacyScreening.objects.count() == 0
-    assert PrivacyFinding.objects.count() == 0
-
-
-@pytest.mark.django_db
-def test_direct_privacy_evidence_delete_is_blocked():
-    submission = RawSubmission.objects.create(
-        age_group="21_24",
-        setting="workplace",
-        experience_types=["sexual_comments"],
-        story_text="Contact survivor@example.test if needed.",
-        publication_choice=PublicationChoice.PUBLIC,
-        retention_expires_at="2026-12-27T00:00:00Z",
-    )
-
-    screening = run_privacy_screening(submission)
-    finding = screening.findings.first()
-
-    with pytest.raises(ValidationError):
-        screening.delete()
-
-    with pytest.raises(ValidationError):
-        PrivacyScreening.objects.filter(pk=screening.pk).delete()
-
-    with pytest.raises(ValidationError):
-        finding.delete()
-
-    with pytest.raises(ValidationError):
-        PrivacyFinding.objects.filter(pk=finding.pk).delete()

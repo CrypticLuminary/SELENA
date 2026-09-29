@@ -82,6 +82,12 @@ def create_anonymous_submission(validated_data: dict) -> SubmissionReceipt:
 
     run_privacy_screening(submission)
 
+    # Public-path submissions enter a private moderation queue only after
+    # consent exists. Moderation approval still cannot publish content.
+    from moderation.services import ensure_moderation_case
+
+    ensure_moderation_case(submission)
+
     return SubmissionReceipt(
         removal_code=removal_code,
         publication_choice=submission.publication_choice,

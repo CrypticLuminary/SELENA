@@ -55,13 +55,13 @@
 - [x] PostgreSQL migrations, tests, audit, and production checks
 
 ## M5 — Moderation
-**Status:** Not started
-- [ ] moderation state machine
-- [ ] moderator permissions
-- [ ] redaction workflow
-- [ ] approve/reject
-- [ ] audit trail
-- [ ] tests
+**Status:** Complete on `phase-5-moderation`; awaiting human PR review
+- [x] transactional moderation state machine
+- [x] moderator/senior-moderator raw access boundary
+- [x] append-only versioned redaction workflow
+- [x] approve/reject/escalate flow with latest-consent + privacy checks
+- [x] append-only bounded audit trail
+- [x] PostgreSQL-backed authorization, workflow, retention, and failure-mode tests
 
 ## M6 — Published stories
 **Status:** Not started

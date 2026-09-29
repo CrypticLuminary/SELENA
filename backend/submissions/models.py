@@ -19,6 +19,9 @@ class PublicationChoice(models.TextChoices):
 
 class SubmissionState(models.TextChoices):
     RECEIVED = "received", "Received"
+    NEEDS_REVIEW = "needs_review", "Needs review"
+    APPROVED = "approved", "Approved"
+    REJECTED = "rejected", "Rejected"
 
 
 class ConsentPurpose(models.TextChoices):

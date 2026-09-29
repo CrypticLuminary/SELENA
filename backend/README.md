@@ -1,6 +1,6 @@
 # SELENA Backend
 
-Phase 2 foundation only. This backend deliberately does **not** store survivor submissions yet.
+This backend currently includes the Phase 2–5 foundations: staff authentication, anonymous private submissions, local privacy screening, and a permission-tested human moderation workflow. Public story publication is still deliberately absent.
 
 ## Local setup
 
@@ -43,7 +43,8 @@ pip-audit
 - do not log plaintext removal/recovery codes;
 - public submitters do not receive accounts;
 - DRF defaults to authenticated access; future public endpoints must explicitly opt into `AllowAny`;
-- no raw submission model/API is introduced in Phase 2.
+- raw submissions remain private and write-only from the public side;
+- public story publication/API is deliberately absent through Phase 5.
 
 See the root `docs/` governance and threat-model documents before adding production data.
 
@@ -86,4 +87,20 @@ Current deterministic rules can flag common emails, phone-like values, URLs,
 social handles, precise numeric dates, street-address-like text, and explicit
 self-name phrases. These rules can miss identifiers and can produce false
 positives. Human privacy/moderation review remains mandatory before publication.
+
+## Moderation boundary
+
+Public-path submissions with current publication consent enter a private moderation
+case. Routine raw-content access is limited server-side to Moderator and Senior
+Moderator roles; Analyst, Operations/Safety, and Superadmin roles do not receive
+raw moderation access merely by being staff.
+
+Moderation uses append-only redaction drafts and audit events. Approval requires
+a current publication consent, an assigned moderator, a redaction draft, and a
+successful local privacy check of that draft. Approval is still an internal
+state only: Phase 5 does not create a public story or public API representation.
+
+Escalated cases require a Senior Moderator to reclaim them. The final production
+policy for single-review versus dual-control publication remains a governance
+decision for the later publication boundary.
 
