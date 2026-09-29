@@ -65,29 +65,72 @@ Avoid raw story bodies, removal codes, secrets, authorization headers, and unnec
 ## Deployment
 Staging and production must use separate secrets/databases. Production deployment happens only after mandatory CI/security gates pass.
 
-
-## Implemented backend foundation
+## Implemented backend through Phase 6
 
 Backend code lives under `backend/`.
 
-Current Phase 2 implementation:
-- Django 5.2 line + Django REST Framework;
-- PostgreSQL as the configured application database;
-- split development/test/production settings;
-- custom UUID-based staff user;
-- active-staff default API permission;
-- public liveness/readiness endpoints as explicit exceptions;
-- privacy-aware logging redaction defense;
-- bounded request-body size;
-- PostgreSQL-backed tests and CI.
+Implemented domains:
+- `staff_accounts` — UUID staff identities and role boundaries;
+- `submissions` — write-only anonymous private submissions, versioned consent,
+  secure removal verifier, retention deadlines, and deletion tombstones;
+- `privacy_review` — local metadata-only identifying-detail screening;
+- `moderation` — private human review, append-only redaction drafts and audit
+  evidence;
+- `public_stories` — separate redacted public representation and minimal report
+  intake.
 
-The backend deliberately has **no survivor submission model or persistence API yet**. Those are Phase 3 responsibilities and must follow the data inventory, consent model, retention policy, and threat-model tests.
+The enforced data flow is:
 
-### Current health endpoints
+```text
+anonymous POST
+    |
+    v
+RAW SUBMISSION (private)
+    |
+    +--> local privacy screening
+    |
+    v
+MODERATION CASE + REDACTION DRAFTS (private)
+    |
+    +--> explicit approval
+    +--> publication control policy
+    +--> public metadata minimization
+    |
+    v
+PUBLIC STORY (separate representation)
+```
+
+A public endpoint never serializes `RawSubmission` or `ModerationCase`
+directly.
+
+### Current public endpoints
+- `POST /api/submissions/`
+- `GET /api/stories/`
+- `GET /api/stories/{public_story_id}/`
+- `POST /api/stories/{public_story_id}/reports/`
 - `GET /api/health/live/`
 - `GET /api/health/ready/`
 
-### Current protected staff endpoint
-- `GET /api/staff/me/`
+### Current protected boundaries
+- staff identity under `/api/staff/`;
+- moderation actions under `/api/moderation/`;
+- publication action under `/api/publication/`.
 
-Future public APIs must explicitly opt into anonymous access; future staff-sensitive actions must add role/action/object authorization rather than relying only on authentication or a role label.
+Publication is configured `disabled` by default. Enabling single-moderator or
+dual-control publication is an explicit governance/deployment decision.
+
+Public-story metadata follows a non-enrichment rule: publication may preserve a
+submitted broad value, reduce an allowed multi-value set, or suppress a value,
+but may not invent more specific context. Detailed relationship fields from the
+private submission are not public by default.
+
+Private retention and public retention are intentionally decoupled. A public
+story can survive deletion of its raw source after the approved raw-retention
+window. Minimal append-only publication provenance uses opaque IDs rather than a
+foreign key into the private graph.
+
+### Validation baseline
+Backend CI uses PostgreSQL and runs Ruff lint/format, migration-drift checks,
+Django system checks, migrations, pytest, Python dependency audit, and production
+deployment checks. CI is read-only outside short-lived migration/formatting
+workflows that are removed immediately after validated use.

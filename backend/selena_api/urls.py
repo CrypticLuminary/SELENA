@@ -7,4 +7,6 @@ urlpatterns = [
     path("api/staff/", include("staff_accounts.urls")),
     path("api/submissions/", include("submissions.urls")),
     path("api/moderation/", include("moderation.urls")),
+    path("api/stories/", include("public_stories.public_urls")),
+    path("api/publication/", include("public_stories.staff_urls")),
 ]
