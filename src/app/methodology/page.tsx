@@ -30,7 +30,7 @@ const FLOW = [
   },
   {
     title: "Privacy protection",
-    body: "Minimum group sizes, count bands, suppression, and inference limits are applied so no single contributor can be singled out from what's shown.",
+    body: "Minimum group sizes, count bands, suppression, and inference limits are applied to reduce the risk that a contributor could be singled out from what is shown.",
   },
   {
     title: "Aggregate",
@@ -140,12 +140,13 @@ export default function MethodologyPage() {
           <p className="mt-1.5 text-ui leading-relaxed text-ink-soft">
             Meeting a minimum group size ({PRIVACY_POLICY.minGroupSize}, or{" "}
             {PRIVACY_POLICY.sensitiveGroupSize} for sensitive groups) is not
-            enough on its own. If two public results could be subtracted to
-            reveal a hidden group — a differencing attack — that combination is
-            suppressed or generalized. Public breakdowns combine at most{" "}
-            {PRIVACY_POLICY.maxDimensions} dimensions, and only predefined
-            combinations are offered. There is no geographic drill-down and no
-            exact dates.
+            enough on its own. SELENA therefore limits public analytics to
+            predefined combinations, uses the stronger two-dimension threshold,
+            and publishes broad count bands from frozen snapshots instead of
+            arbitrary live queries. These controls reduce — but do not eliminate
+            — differencing and linkage risk. Public breakdowns combine at most{" "}
+            {PRIVACY_POLICY.maxDimensions} dimensions. There is no geographic
+            drill-down and no exact dates.
           </p>
         </div>
       </section>

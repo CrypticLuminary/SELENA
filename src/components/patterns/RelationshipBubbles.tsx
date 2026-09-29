@@ -10,24 +10,22 @@ import { CategoryDetailSheet } from "./CategoryDetailSheet";
 /** Compact labels that fit inside bubbles. */
 const REL_SHORT: Record<string, string> = {
   family: "Family",
-  extended_family: "Extended",
   partner: "Partner",
-  former_partner: "Ex-partner",
-  friend: "Friend",
-  acquaintance: "Acquaint.",
-  colleague: "Colleague",
-  employer: "Employer",
-  teacher_authority: "Authority",
+  friend_acquaintance: "Friend / acq.",
+  authority: "Authority",
   stranger: "Stranger",
-  online_contact: "Online",
+  online: "Online",
   other: "Other",
+  prefer_not: "Prefer not",
 };
 
 export function RelationshipBubbles({
   distribution,
+  datasetVersion,
   initialSelected,
 }: {
   distribution: PatternDistribution;
+  datasetVersion: string;
   initialSelected?: string;
 }) {
   // Preselect a relationship when deep-linked from a story (?relationship=…),
@@ -54,7 +52,10 @@ export function RelationshipBubbles({
   const selectedLabel =
     distribution.cells.find((c) => c.category === selected)?.label ?? "";
 
-  const footnoteParts = ["Bubble size shows relative scale; figures are ranges, not exact counts."];
+  const footnoteParts = [
+    "A submission may include more than one relationship category, so categories may overlap.",
+    "Bubble size shows relative scale; figures are ranges, not exact counts.",
+  ];
   if (distribution.suppressedCount > 0) {
     footnoteParts.push(
       `${distribution.suppressedCount} group(s) hidden to protect privacy.`,
@@ -86,6 +87,7 @@ export function RelationshipBubbles({
         key={selected ?? "closed"}
         relationshipValue={selected}
         relationshipLabel={selectedLabel}
+        datasetVersion={datasetVersion}
         onClose={() => setSelected(null)}
       />
     </>

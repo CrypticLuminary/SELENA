@@ -78,6 +78,7 @@ class PublicationRecord(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     public_story_id = models.UUIDField(unique=True)
     source_case_id = models.UUIDField(unique=True)
+    source_submission_id = models.UUIDField(db_index=True)
     source_draft_id = models.UUIDField()
     source_draft_version = models.PositiveIntegerField()
     approval_event_id = models.UUIDField()

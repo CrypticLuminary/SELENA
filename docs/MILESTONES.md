@@ -97,13 +97,20 @@
 - [ ] browser E2E suite (scheduled for M11 hardening rather than blocking this API-boundary milestone)
 
 ## M8 — Privacy-safe analytics
-**Status:** Not started
-- [ ] server-side thresholds
-- [ ] suppression
-- [ ] count bands
-- [ ] max-2 dimensions
-- [ ] approved combinations
-- [ ] privacy bypass tests
+**Status:** Engineering complete on `phase-8-privacy-safe-analytics`; draft PR #13 open; production approval pending Issue #12
+- [x] minimized statistics-consented analytics contribution boundary
+- [x] server-side general/sensitive/cross thresholds
+- [x] suppression states and count bands with no exact public counts
+- [x] max-2 public dimensions
+- [x] predefined relationship × age/setting/experience combinations only
+- [x] frozen snapshot APIs instead of live arbitrary aggregation
+- [x] stale privacy-policy snapshot fail-closed behavior
+- [x] frontend/backend privacy-policy synchronization guard
+- [x] real Patterns UI integration; synthetic analytics fixtures removed
+- [x] privacy bypass, retention, immutability, and API tests
+- [ ] approve/enforce production snapshot release cadence and composition guard (Issue #12)
+- [x] final adversarial composition review
+- [x] final branch cleanup + stacked draft PR #13
 
 ## M9 — Staff moderation/admin
 **Status:** Not started

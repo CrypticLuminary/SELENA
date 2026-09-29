@@ -211,6 +211,7 @@ def publish_case(
     PublicationRecord.objects.create(
         public_story_id=story.id,
         source_case_id=case.id,
+        source_submission_id=submission.id,
         source_draft_id=draft.id,
         source_draft_version=draft.version,
         approval_event_id=approval.id,

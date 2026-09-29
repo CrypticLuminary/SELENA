@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { useEffect, useState } from "react";
-import { getCrossBreakdown } from "@/lib/mock-api";
+import { getCrossBreakdown } from "@/lib/api";
 import type { CrossBreakdown } from "@/types/patterns";
 import { BottomSheet } from "@/components/ui/bottom-sheet";
 import { Badge } from "@/components/ui/badge";
@@ -23,10 +23,12 @@ const SECONDARIES = ["setting", "age", "experience"] as const;
 export function CategoryDetailSheet({
   relationshipValue,
   relationshipLabel,
+  datasetVersion,
   onClose,
 }: {
   relationshipValue: string | null;
   relationshipLabel: string;
+  datasetVersion: string;
   onClose: () => void;
 }) {
   const open = relationshipValue !== null;
@@ -41,7 +43,7 @@ export function CategoryDetailSheet({
     let active = true;
     Promise.all(
       SECONDARIES.map((s) =>
-        getCrossBreakdown("relationship", s, relationshipValue),
+        getCrossBreakdown("relationship", s, relationshipValue, datasetVersion),
       ),
     )
       .then(([setting, age, experience]) => {
@@ -53,7 +55,7 @@ export function CategoryDetailSheet({
     return () => {
       active = false;
     };
-  }, [relationshipValue, reloadKey]);
+  }, [datasetVersion, relationshipValue, reloadKey]);
 
   const groupBand = data?.setting.groupBand ?? null;
 

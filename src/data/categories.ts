@@ -2,9 +2,8 @@
  * SELENA — canonical category definitions.
  *
  * This is the frontend source of truth for structured vocabulary. Public story
- * metadata uses the broad PERSON_RELATIONSHIP_CATEGORIES introduced below;
- * legacy RELATIONSHIPS remains only for the temporary Phase 8 pattern fixtures
- * until analytics moves behind the backend boundary.
+ * and public analytics relationship metadata use the broad
+ * PERSON_RELATIONSHIP_CATEGORIES introduced below.
  *
  * Deliberately BROAD categories only. We never collect or expose exact ages,
  * dates, names, institutions, or locations — see the product principles.
@@ -169,10 +168,9 @@ export type PatternDimension = (typeof PATTERN_DIMENSIONS)[number]["value"];
 /* ================================================================== */
 /* PEOPLE INVOLVED — optional, hierarchical structured context.        */
 /*                                                                    */
-/* The top-level categories are also the ONLY relationship vocabulary  */
-/* allowed on public stories. Second-level details stay private.       */
-/* Legacy RELATIONSHIPS above remains only for Phase 8 mock analytics. */
-/* Everything here is optional; every field offers "prefer not to say".*/
+/* The top-level categories are the ONLY relationship vocabulary       */
+/* allowed on public stories and analytics. Second-level details stay   */
+/* private. Everything here is optional and includes prefer-not-to-say. */
 /* ================================================================== */
 
 /** Top-level relationship categories. Selecting one may reveal a detail list. */
