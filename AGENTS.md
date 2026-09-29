@@ -14,6 +14,12 @@ Before substantial work, read:
 - `docs/SECURITY.md`
 - `docs/DECISIONS.md`
 - `docs/MILESTONES.md`
+- `docs/DATA_INVENTORY.md`
+- `docs/THREAT_MODEL.md`
+- `docs/RETENTION_AND_DELETION.md`
+- `docs/CONSENT_MODEL.md`
+- `docs/STAFF_ROLES.md`
+- `docs/INCIDENT_RESPONSE.md`
 
 If documentation conflicts with implementation, identify the conflict instead of silently changing product or security policy.
 
@@ -109,3 +115,15 @@ If implementation requires one of these changes, report the required decision fi
 8. Summarize changes, checks run, security/privacy considerations, and remaining risks.
 
 Do not make unrelated refactors during a focused task.
+
+## Backend foundation
+
+Backend code lives under `backend/`.
+
+Current backend rules:
+- PostgreSQL is the configured database; do not silently introduce a second production database path.
+- Public submitters remain accountless.
+- The default DRF permission requires an active staff account; public endpoints must opt into anonymous access explicitly.
+- A staff role label is not sufficient authorization for sensitive actions; enforce action/object permissions server-side.
+- Do not introduce raw survivor submission storage outside the dedicated submission milestone and its tests.
+- Run the backend CI-equivalent checks documented in `backend/README.md`.
