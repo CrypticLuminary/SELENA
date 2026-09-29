@@ -49,3 +49,14 @@ Do not send raw survivor content to third parties by default.
 
 ## Claims
 Do not claim “100% anonymous.” Use precise language about minimizing identifying information and explain limitations.
+
+## Governance references
+
+Production implementation must also follow:
+- `DATA_INVENTORY.md`
+- `RETENTION_AND_DELETION.md`
+- `CONSENT_MODEL.md`
+- `STAFF_ROLES.md`
+- `THREAT_MODEL.md`
+
+Where documents conflict, do not silently choose the less restrictive behavior. Record a new decision in `DECISIONS.md`.

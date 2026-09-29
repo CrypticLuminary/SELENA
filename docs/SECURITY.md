@@ -48,3 +48,13 @@ Before launch define severity levels, responsible roles, containment, credential
 
 ## Launch gate
 Do not launch with unresolved critical/high-risk findings that could expose raw submissions, bypass moderation/privacy policy, compromise privileged accounts, or leak secrets.
+
+## Threat-model and incident references
+
+Production implementation must also follow:
+- `THREAT_MODEL.md`
+- `STAFF_ROLES.md`
+- `INCIDENT_RESPONSE.md`
+- `DATA_INVENTORY.md`
+
+Security tests should be traceable to concrete threats in `THREAT_MODEL.md`, especially raw-data exposure, unauthorized publication, analytics re-identification, staff compromise, removal-code abuse, and backup resurrection.

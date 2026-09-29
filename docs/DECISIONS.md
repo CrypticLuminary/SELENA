@@ -38,11 +38,50 @@ Routine logs must not contain raw survivor story bodies.
 
 Prefer reuse and minimal code, but never reduce validation, authorization, privacy, testing, accessibility, or auditability merely to shorten code.
 
+## DEC-007 — Separate publication and statistics consent
+**Status:** Accepted as engineering baseline
+
+Publication consent and aggregate-statistics consent are separate purposes. Statistics consent defaults to false and cannot be inferred from publication consent.
+
+## DEC-008 — No automatic raw-data privilege for Superadmin
+**Status:** Accepted as engineering baseline
+
+System administration does not automatically grant routine raw-story access. Exceptional access uses a documented break-glass process.
+
+## DEC-009 — No raw bulk export in MVP
+**Status:** Accepted as engineering baseline
+
+SELENA MVP does not provide a general-purpose raw-submission export feature.
+
+## DEC-010 — Proposed retention schedule
+**Status:** Proposed — owner/legal/privacy approval required
+
+Engineering baseline:
+- raw pending moderation: up to 90 days
+- approved raw narrative: delete 30 days after publication when no hold applies
+- rejected raw submission: 30 days
+- statistics-only person-level structured data: up to 24 months
+- reports/removal workflow records: 12 months
+- staff security/audit events: 24 months
+- backups: rolling 35 days
+- minimal deletion tombstones: 36 months
+
+See `RETENTION_AND_DELETION.md`.
+
+## DEC-011 — Publication control model
+**Status:** Proposed
+
+Preferred model for a sensitive product: Moderator reviews/redacts, Senior Moderator performs final publication/unpublication. A single-moderator publication model may be chosen if staffing makes dual control impractical, but it must be explicit.
+
+## DEC-012 — Consent records are immutable/versioned
+**Status:** Accepted as engineering baseline
+
+Production keeps append-only/versioned consent records containing purpose, granted/declined state, text version, policy version, schema version, and timestamp. Historical consent is never silently broadened.
+
 ## Pending decisions
-- exact retention periods
+- approve/modify DEC-010 retention periods
+- approve DEC-011 publication-control model
 - hosting/data residency
 - third-party moderation/AI providers, if any
-- final staff role matrix
-- incident-response owners
-- backup retention
-- consent text/versioning
+- named incident-response owners/contact channel
+- final user-facing consent wording
