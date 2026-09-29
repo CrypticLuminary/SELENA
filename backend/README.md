@@ -70,3 +70,20 @@ The second removes tombstones after the configured tombstone retention period.
 Production scheduling for these commands belongs to the deployment/operations
 milestone.
 
+## Local privacy screening
+
+Every new anonymous submission now receives a versioned local privacy-screening
+run. The screening layer is deliberately assistive:
+
+- raw narratives stay inside the SELENA backend;
+- no external AI/moderation service receives survivor text;
+- only finding category, rule ID, and character offsets are stored;
+- matched text/snippets are not duplicated into screening records;
+- `no_automated_flags` is **not** publication approval;
+- detector failures produce an error screening state and still require human review.
+
+Current deterministic rules can flag common emails, phone-like values, URLs,
+social handles, precise numeric dates, street-address-like text, and explicit
+self-name phrases. These rules can miss identifiers and can produce false
+positives. Human privacy/moderation review remains mandatory before publication.
+
