@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { getSnapshot } from "@/lib/mock-api";
+import { getSnapshot } from "@/lib/api";
 import type { AggregateSnapshot } from "@/types/patterns";
 import { PrevalenceDisclaimer } from "./PrevalenceDisclaimer";
 import { RelationshipBubbles } from "./RelationshipBubbles";
@@ -35,6 +35,21 @@ export function PatternDashboard({
     };
   }, [reloadKey]);
 
+
+  if (status === "error") {
+    return (
+      <div className="mt-8">
+        <ErrorState
+          title="We couldn't load these patterns right now."
+          onRetry={() => {
+            setStatus("loading");
+            setReloadKey((k) => k + 1);
+          }}
+        />
+      </div>
+    );
+  }
+
   if (status === "loading" || !snapshot) {
     return (
       <div className="mt-8 space-y-6">
@@ -49,20 +64,6 @@ export function PatternDashboard({
             <ChartSkeleton rows={5} />
           </div>
         </div>
-      </div>
-    );
-  }
-
-  if (status === "error") {
-    return (
-      <div className="mt-8">
-        <ErrorState
-          title="We couldn't load these patterns right now."
-          onRetry={() => {
-            setStatus("loading");
-            setReloadKey((k) => k + 1);
-          }}
-        />
       </div>
     );
   }
@@ -84,6 +85,7 @@ export function PatternDashboard({
 
       <RelationshipBubbles
         distribution={relationship}
+        datasetVersion={snapshot.datasetVersion}
         initialSelected={initialRelationship}
       />
 
@@ -94,7 +96,7 @@ export function PatternDashboard({
 
       <PatternBars distribution={experience} />
 
-      <PatternFilters />
+      <PatternFilters datasetVersion={snapshot.datasetVersion} />
 
       <footer className="border-t border-line pt-5 text-xs text-ink-faint">
         <p>

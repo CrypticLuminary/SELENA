@@ -63,12 +63,17 @@ def create_anonymous_submission(validated_data: dict) -> SubmissionReceipt:
         granted=publication_consent,
         consent_text_version=PUBLICATION_CONSENT_VERSION,
     )
-    ConsentRecord.objects.create(
+    statistics_consent_record = ConsentRecord.objects.create(
         submission=submission,
         purpose=ConsentPurpose.STATISTICS,
         granted=statistics_consent,
         consent_text_version=STATISTICS_CONSENT_VERSION,
     )
+
+    if statistics_consent:
+        from analytics.services import create_analytics_contribution
+
+        create_analytics_contribution(submission, statistics_consent_record)
 
     removal_code = generate_removal_code()
     RemovalCredential.objects.create(

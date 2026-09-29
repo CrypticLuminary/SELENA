@@ -161,6 +161,7 @@ def test_single_moderator_publication_copies_only_approved_public_projection(
     assert story.alias.startswith("Anonymous ")
 
     assert record.source_case_id == case.id
+    assert record.source_submission_id == case.submission_id
     assert record.source_draft_version == 1
     assert record.moderation_approved_by == moderator
     assert record.published_by == moderator
@@ -276,6 +277,7 @@ def test_public_story_api_exposes_no_private_provenance_or_exact_date(client, se
     assert "content" not in listed
     assert "published_at" not in listed
     assert "source_case_id" not in listed
+    assert "source_submission_id" not in listed
     assert "published_by" not in listed
     assert listed["published_label"].startswith("Shared in ")
 
@@ -283,6 +285,7 @@ def test_public_story_api_exposes_no_private_provenance_or_exact_date(client, se
     assert detailed["content"] == "A privacy-reviewed public version of the experience."
     assert "published_at" not in detailed
     assert "source_case_id" not in detailed
+    assert "source_submission_id" not in detailed
     assert "source_draft_id" not in detailed
     assert "moderation_approved_by" not in detailed
     assert detail["Cache-Control"] == "no-store"

@@ -5,13 +5,26 @@ import {
   PERSON_RELATIONSHIP_CATEGORIES,
   SETTINGS,
   WARNINGS,
+  ageGroupLabel,
+  experienceTypeLabel,
+  personRelationshipCategoryLabel,
+  settingLabel,
   type AgeGroup,
   type ExperienceType,
   type PersonRelationshipCategory,
+  type PatternDimension,
   type Setting,
   type Warning,
 } from "@/data/categories";
+import { PRIVACY_POLICY_VERSION } from "@/lib/privacy";
 import type { Story, StoryFilters, StoryPage } from "@/types/story";
+import type {
+  AggregateSnapshot,
+  CountBand,
+  CrossBreakdown,
+  MaybeCell,
+  PatternDistribution,
+} from "@/types/patterns";
 import type {
   ReportReason,
   StoryReport,
@@ -21,13 +34,13 @@ import type {
 
 const REQUEST_TIMEOUT_MS = 15_000;
 
-const ageValues = new Set(AGE_GROUPS.map((item) => item.value));
-const relationshipValues = new Set(
+const ageValues: Set<string> = new Set(AGE_GROUPS.map((item) => item.value));
+const relationshipValues: Set<string> = new Set(
   PERSON_RELATIONSHIP_CATEGORIES.map((item) => item.value),
 );
-const settingValues = new Set(SETTINGS.map((item) => item.value));
-const experienceValues = new Set(EXPERIENCE_TYPES.map((item) => item.value));
-const warningValues = new Set(WARNINGS.map((item) => item.value));
+const settingValues: Set<string> = new Set(SETTINGS.map((item) => item.value));
+const experienceValues: Set<string> = new Set(EXPERIENCE_TYPES.map((item) => item.value));
+const warningValues: Set<string> = new Set(WARNINGS.map((item) => item.value));
 
 function allowedValue(values: Set<string>) {
   return z.string().refine((value) => values.has(value));
@@ -294,3 +307,254 @@ export async function reportStory(
     },
   );
 }
+
+/* ------------------------------------------------------------------ */
+/* Privacy-safe aggregate patterns                                     */
+/* ------------------------------------------------------------------ */
+
+const countBandSchema = z.enum([
+  "10–19",
+  "20–49",
+  "50–99",
+  "100–199",
+  "200–499",
+  "500–999",
+  "1,000+",
+]);
+
+const patternDimensionSchema = z.enum([
+  "relationship",
+  "age",
+  "setting",
+  "experience",
+]);
+
+const crossSecondarySchema = z.enum(["age", "setting", "experience"]);
+
+const displayedPatternCellSchema = z
+  .object({
+    category: z.string().min(1).max(64),
+    display: z.literal(true),
+    count_band: countBandSchema,
+    scale: z.number().int().min(1).max(7),
+  })
+  .strict();
+
+const suppressedPatternCellSchema = z
+  .object({
+    category: z.string().min(1).max(64),
+    display: z.literal(false),
+  })
+  .strict();
+
+const patternCellSchema = z.discriminatedUnion("display", [
+  displayedPatternCellSchema,
+  suppressedPatternCellSchema,
+]);
+
+const patternDistributionSchema = z
+  .object({
+    dimension: patternDimensionSchema,
+    title: z.string().min(1).max(96),
+    cells: z.array(patternCellSchema),
+    overlapping: z.boolean(),
+  })
+  .strict();
+
+const patternSnapshotSchema = z
+  .object({
+    dataset_version: z.string().min(1).max(96),
+    privacy_policy_version: z.string().min(1).max(64),
+    generated_label: z.string().min(1).max(96),
+    total_band: countBandSchema.nullable(),
+    distributions: z
+      .object({
+        relationship: patternDistributionSchema,
+        age: patternDistributionSchema,
+        setting: patternDistributionSchema,
+        experience: patternDistributionSchema,
+      })
+      .strict(),
+  })
+  .strict();
+
+const comparableRelationshipsSchema = z
+  .object({
+    dataset_version: z.string().min(1).max(96),
+    privacy_policy_version: z.string().min(1).max(64),
+    values: z.array(allowedValue(relationshipValues)),
+  })
+  .strict();
+
+const crossBreakdownSchema = z
+  .object({
+    dataset_version: z.string().min(1).max(96),
+    privacy_policy_version: z.string().min(1).max(64),
+    primary: z.literal("relationship"),
+    secondary: crossSecondarySchema,
+    primary_category: allowedValue(relationshipValues),
+    group_band: countBandSchema.nullable(),
+    distribution: patternDistributionSchema,
+    unavailable: z.boolean(),
+  })
+  .strict();
+
+function patternLabel(dimension: PatternDimension, category: string): string {
+  switch (dimension) {
+    case "relationship":
+      if (!relationshipValues.has(category)) {
+        throw new ApiError(502, "The server returned an unexpected relationship category.");
+      }
+      return personRelationshipCategoryLabel(category);
+    case "age":
+      if (!ageValues.has(category)) {
+        throw new ApiError(502, "The server returned an unexpected age category.");
+      }
+      return ageGroupLabel(category as AgeGroup);
+    case "setting":
+      if (!settingValues.has(category)) {
+        throw new ApiError(502, "The server returned an unexpected setting category.");
+      }
+      return settingLabel(category as Setting);
+    case "experience":
+      if (!experienceValues.has(category)) {
+        throw new ApiError(502, "The server returned an unexpected experience category.");
+      }
+      return experienceTypeLabel(category as ExperienceType);
+  }
+}
+
+function mapPatternDistribution(
+  value: z.infer<typeof patternDistributionSchema>,
+  expectedDimension?: PatternDimension,
+): PatternDistribution {
+  if (expectedDimension && value.dimension !== expectedDimension) {
+    throw new ApiError(502, "The server returned an unexpected pattern dimension.");
+  }
+
+  const dimension = value.dimension as PatternDimension;
+  const cells: MaybeCell[] = value.cells.map((item) => {
+    const base = {
+      category: item.category,
+      label: patternLabel(dimension, item.category),
+    };
+
+    if (!item.display) {
+      return { ...base, display: false };
+    }
+
+    return {
+      ...base,
+      display: true,
+      countBand: item.count_band as CountBand,
+      scale: item.scale,
+    };
+  });
+
+  return {
+    dimension,
+    title: value.title,
+    cells,
+    suppressedCount: cells.filter((item) => !item.display).length,
+    overlapping: value.overlapping,
+  };
+}
+
+export async function getSnapshot(): Promise<AggregateSnapshot> {
+  const snapshot = await requestJson("/patterns/", patternSnapshotSchema);
+
+  if (snapshot.privacy_policy_version !== PRIVACY_POLICY_VERSION) {
+    throw new ApiError(
+      409,
+      "The privacy policy changed while this frontend was deployed. Please refresh later.",
+    );
+  }
+
+  return {
+    datasetVersion: snapshot.dataset_version,
+    privacyPolicyVersion: snapshot.privacy_policy_version,
+    generatedAt: snapshot.generated_label,
+    totalSubmissionsLabel: snapshot.total_band
+      ? `${snapshot.total_band} eligible submissions`
+      : "a privacy-protected set of eligible submissions",
+    distributions: {
+      relationship: mapPatternDistribution(
+        snapshot.distributions.relationship,
+        "relationship",
+      ),
+      age: mapPatternDistribution(snapshot.distributions.age, "age"),
+      setting: mapPatternDistribution(snapshot.distributions.setting, "setting"),
+      experience: mapPatternDistribution(
+        snapshot.distributions.experience,
+        "experience",
+      ),
+    },
+  };
+}
+
+export async function getComparableRelationships(
+  expectedDatasetVersion: string,
+): Promise<{ value: string; label: string }[]> {
+  const response = await requestJson(
+    "/patterns/relationships/",
+    comparableRelationshipsSchema,
+  );
+
+  if (
+    response.dataset_version !== expectedDatasetVersion ||
+    response.privacy_policy_version !== PRIVACY_POLICY_VERSION
+  ) {
+    throw new ApiError(409, "Patterns changed while this page was open. Please refresh.");
+  }
+
+  return response.values.map((value) => ({
+    value,
+    label: personRelationshipCategoryLabel(value),
+  }));
+}
+
+export async function getCrossBreakdown(
+  primary: PatternDimension,
+  secondary: "setting" | "age" | "experience",
+  primaryCategory: string,
+  expectedDatasetVersion: string,
+): Promise<CrossBreakdown> {
+  if (primary !== "relationship" || !relationshipValues.has(primaryCategory)) {
+    throw new ApiError(400, "This pattern comparison is not available.");
+  }
+
+  const params = new URLSearchParams({
+    primary,
+    secondary,
+    category: primaryCategory,
+  });
+  const response = await requestJson(
+    `/patterns/cross/?${params.toString()}`,
+    crossBreakdownSchema,
+  );
+
+  if (
+    response.secondary !== secondary ||
+    response.primary_category !== primaryCategory
+  ) {
+    throw new ApiError(502, "The server returned an unexpected pattern comparison.");
+  }
+
+  if (
+    response.dataset_version !== expectedDatasetVersion ||
+    response.privacy_policy_version !== PRIVACY_POLICY_VERSION
+  ) {
+    throw new ApiError(409, "Patterns changed while this page was open. Please refresh.");
+  }
+
+  return {
+    primary: "relationship",
+    secondary,
+    primaryCategory,
+    primaryLabel: personRelationshipCategoryLabel(primaryCategory),
+    groupBand: response.group_band as CountBand | null,
+    distribution: mapPatternDistribution(response.distribution, secondary),
+    unavailable: response.unavailable,
+  };
+}
+

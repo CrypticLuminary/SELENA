@@ -4,17 +4,17 @@
  * WHY THIS FILE EXISTS
  * --------------------
  * Privacy rules must live in ONE place, not be scattered across components.
- * In production these numbers are enforced SERVER-SIDE by the aggregation +
- * privacy engine, and the frontend never sees raw data. In V1 the mock data in
- * `data/patterns.ts` is authored as though it already passed through this
- * engine: coarse count bands, relative scales, and suppressed cells only.
+ * These values describe the public policy for user-facing explanations. The
+ * backend analytics service is authoritative: it creates minimized consented
+ * contributions, applies thresholds, and publishes frozen snapshots containing
+ * only bands, relative scales, and suppression states.
  *
  * The frontend uses this module for two innocent things:
  *   1. Displaying the policy to users (Methodology / disclaimers).
  *   2. Helper mappings (band → visual scale, band → explanatory copy).
  *
  * The frontend NEVER decides whether raw data is safe to display. It only
- * renders what the (mock) privacy-safe layer already approved.
+ * renders what the backend privacy-safe layer already approved.
  */
 
 import type { CountBand } from "@/types/patterns";
@@ -24,6 +24,8 @@ export interface PrivacyPolicy {
   minGroupSize: number;
   /** Stronger minimum for sensitive groups (e.g. minors). */
   sensitiveGroupSize: number;
+  /** Stronger minimum for every approved two-dimension public cell. */
+  crossGroupSize: number;
   /** Maximum number of analytical dimensions a public breakdown may combine. */
   maxDimensions: number;
   /** Whether exact counts are ever exposed publicly. */
@@ -37,13 +39,14 @@ export interface PrivacyPolicy {
 export const PRIVACY_POLICY: PrivacyPolicy = {
   minGroupSize: 10,
   sensitiveGroupSize: 20,
+  crossGroupSize: 20,
   maxDimensions: 2,
   exactCountsPublic: false,
   geographicBreakdown: false,
   countBandsEnabled: true,
 };
 
-export const PRIVACY_POLICY_VERSION = "policy-2026.1";
+export const PRIVACY_POLICY_VERSION = "privacy-policy-2026.1";
 
 /** The ordered set of public count bands. */
 export const COUNT_BANDS: readonly CountBand[] = [
@@ -85,8 +88,10 @@ export const SUPPRESSED_MESSAGE =
 export const PRIVACY_SUMMARY_POINTS: string[] = [
   `Groups smaller than ${PRIVACY_POLICY.minGroupSize} are never displayed.`,
   `Sensitive groups, including those involving minors, use a higher threshold of ${PRIVACY_POLICY.sensitiveGroupSize}.`,
+  `Every approved two-dimension cell uses a minimum of ${PRIVACY_POLICY.crossGroupSize} eligible contributions.`,
   "Public figures are shown as ranges (count bands), never exact numbers.",
   `Public breakdowns combine at most ${PRIVACY_POLICY.maxDimensions} dimensions, and only predefined combinations are offered.`,
-  "Combinations that could reveal a hidden group by subtraction (a differencing attack) are suppressed or generalized.",
+  "Predefined two-dimension views use stronger thresholds and broad count bands to reduce differencing risk.",
+  "These controls reduce re-identification risk; they do not create a formal mathematical anonymity guarantee.",
   "There is no geographic drill-down and no exact dates or locations.",
 ];

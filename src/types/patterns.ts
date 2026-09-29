@@ -7,9 +7,8 @@ import type { PatternDimension } from "@/data/categories";
  * There are NO exact counts in these shapes. A cell carries a coarse count
  * BAND and a relative visual SCALE, or it is suppressed entirely.
  *
- * In V1 these come from `data/patterns.ts` (mock). In production they come from
- * a server-side aggregation + privacy engine (see METHODOLOGY). Either way the
- * frontend contract is identical, so the mock swaps out cleanly.
+ * These shapes are populated only from the server's frozen analytics snapshot
+ * endpoints. Suppression and banding decisions are never made by components.
  */
 
 /** Coarse public count bands. Never an exact number. */
