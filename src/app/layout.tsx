@@ -6,6 +6,7 @@ import "./globals.css";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { SkipLink } from "@/components/layout/SkipLink";
+import { QuickExitHotkey } from "@/components/layout/QuickExit";
 
 // Editorial display serif (variable). Body/UI stay Geist.
 const fraunces = Fraunces({
@@ -37,6 +38,7 @@ export default function RootLayout({
       className={`${GeistSans.variable} ${GeistMono.variable} ${fraunces.variable}`}
     >
       <body className="min-h-screen font-sans">
+        <QuickExitHotkey />
         <SkipLink />
         <Header />
         <main

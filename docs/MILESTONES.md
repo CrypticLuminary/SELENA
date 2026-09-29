@@ -12,13 +12,13 @@
 - [ ] Define incident-response ownership
 
 ## M1 — Existing frontend production audit
-**Status:** Not started
-- [ ] Audit routes/components/data boundaries
-- [ ] Review dependency versions
-- [ ] Identify accessibility gaps
-- [ ] Identify security/privacy gaps
-- [ ] Identify duplication/dead code
-- [ ] Establish test baseline
+**Status:** Complete on `phase-1-production-audit`; awaiting human PR review
+- [x] Audit routes/components/data boundaries
+- [x] Review and remediate dependency versions
+- [x] Identify and fix Phase 1 accessibility gaps
+- [x] Identify and harden security/privacy gaps
+- [x] Identify duplication/dead/redundant behavior during self-review
+- [x] Establish repeatable lint/typecheck/privacy/build/dependency-audit/CodeQL baseline
 
 ## M2 — Backend foundation
 **Status:** Not started
@@ -97,14 +97,14 @@
 - [ ] operational procedures
 
 ## M11 — CI, testing, security hardening
-**Status:** Not started
-- [ ] GitHub Actions CI
-- [ ] lint/typecheck/build gates
+**Status:** Not started (frontend foundations established early in M1)
+- [x] GitHub Actions frontend CI foundation
+- [x] frontend lint/typecheck/privacy/build gates
 - [ ] backend tests/migration checks
-- [ ] CodeQL/static analysis
-- [ ] dependency/secret scanning
-- [ ] accessibility tests
-- [ ] security test suite
+- [x] CodeQL/static analysis foundation
+- [ ] complete dependency + secret-scanning posture (npm audit/Dependabot already active; GitHub Dependency Review awaits Dependency Graph)
+- [ ] browser accessibility tests
+- [ ] full security test suite
 
 ## M12 — Deployment, closed beta, production launch
 **Status:** Not started

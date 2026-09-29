@@ -9,12 +9,15 @@ import { ContentWarningGate } from "@/components/stories/ContentWarningGate";
 import { ReportDialog } from "@/components/stories/ReportDialog";
 import { RelatedStories } from "@/components/stories/RelatedStories";
 
+type StoryParams = Promise<{ id: string }>;
+
 export async function generateMetadata({
   params,
 }: {
-  params: { id: string };
+  params: StoryParams;
 }): Promise<Metadata> {
-  const story = await getStory(params.id);
+  const { id } = await params;
+  const story = await getStory(id);
   if (!story) return { title: "Story not found" };
   return {
     title: story.alias,
@@ -25,9 +28,10 @@ export async function generateMetadata({
 export default async function StoryDetailPage({
   params,
 }: {
-  params: { id: string };
+  params: StoryParams;
 }) {
-  const story = await getStory(params.id);
+  const { id } = await params;
+  const story = await getStory(id);
   if (!story) notFound();
 
   const related = await getRelatedStories(story);

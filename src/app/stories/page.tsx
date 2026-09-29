@@ -18,18 +18,22 @@ function first(value: string | string[] | undefined): string | undefined {
   return Array.isArray(value) ? value[0] : value;
 }
 
-export default function StoriesPage({
+type StorySearchParams = Promise<{
+  [key: string]: string | string[] | undefined;
+}>;
+
+export default async function StoriesPage({
   searchParams,
 }: {
-  searchParams: { [key: string]: string | string[] | undefined };
+  searchParams: StorySearchParams;
 }) {
+  const query = await searchParams;
+
   // Support deep links from the Patterns dashboard, e.g. /stories?relationship=workplace
   const initialFilters: StoryFilters = {
-    relationship: first(searchParams.relationship) as Relationship | undefined,
-    setting: first(searchParams.setting) as Setting | undefined,
-    experienceType: first(searchParams.experience) as
-      | ExperienceType
-      | undefined,
+    relationship: first(query.relationship) as Relationship | undefined,
+    setting: first(query.setting) as Setting | undefined,
+    experienceType: first(query.experience) as ExperienceType | undefined,
   };
 
   return (

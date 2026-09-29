@@ -11,11 +11,31 @@ function leaveNow() {
   try {
     // Replace the current history entry so this page is harder to reach via Back.
     window.location.replace(SAFE_URL);
-    // Best-effort: also blank the referrer-visible URL if replace is slow.
-    window.location.href = SAFE_URL;
   } catch {
-    window.location.href = SAFE_URL;
+    // Fallback only if replace is unavailable/fails.
+    window.location.assign(SAFE_URL);
   }
+}
+
+/**
+ * Mount exactly once near the application root. Visible QuickExit buttons are
+ * intentionally listener-free so multiple buttons do not register duplicate
+ * global keyboard handlers.
+ */
+export function QuickExitHotkey() {
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (e.shiftKey && e.key === "Escape") {
+        e.preventDefault();
+        leaveNow();
+      }
+    }
+
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+
+  return null;
 }
 
 /**
@@ -32,19 +52,6 @@ export function QuickExit({
   className?: string;
   label?: string;
 }) {
-  useEffect(() => {
-    // Optional hotkey: Shift+Escape. Chosen over plain Escape so it doesn't
-    // collide with closing dialogs/menus, and to avoid accidental exits.
-    function onKey(e: KeyboardEvent) {
-      if (e.shiftKey && e.key === "Escape") {
-        e.preventDefault();
-        leaveNow();
-      }
-    }
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, []);
-
   return (
     <button
       type="button"
