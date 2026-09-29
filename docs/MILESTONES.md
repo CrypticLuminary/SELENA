@@ -45,12 +45,14 @@
 - [x] PostgreSQL-backed tests, migration checks, deploy checks, and dependency audit
 
 ## M4 — Privacy/PII preprocessing
-**Status:** Not started
-- [ ] privacy preprocessing boundary
-- [ ] identifying-detail detection workflow
-- [ ] safe logging
-- [ ] review states
-- [ ] adversarial tests
+**Status:** Complete on `phase-4-privacy-preprocessing`; awaiting human PR review
+- [x] local privacy preprocessing boundary with no third-party raw-text transfer
+- [x] versioned identifying-detail detection workflow
+- [x] metadata-only findings (category/rule/offsets; no duplicated snippets)
+- [x] safe failure logging with adversarial raw-text leakage test
+- [x] explicit flags/no-flags/error screening states that cannot approve publication
+- [x] versioned re-screening/supersession history
+- [x] PostgreSQL migrations, tests, audit, and production checks
 
 ## M5 — Moderation
 **Status:** Not started

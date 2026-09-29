@@ -76,6 +76,12 @@ def create_anonymous_submission(validated_data: dict) -> SubmissionReceipt:
         verifier=make_password(removal_code),
     )
 
+    # Local privacy screening is assistive only. It cannot publish content.
+    # Import locally to keep the submissions model layer independent.
+    from privacy_review.services import run_privacy_screening
+
+    run_privacy_screening(submission)
+
     return SubmissionReceipt(
         removal_code=removal_code,
         publication_choice=submission.publication_choice,

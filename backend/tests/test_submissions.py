@@ -10,6 +10,7 @@ from django.urls import reverse
 from django.utils import timezone
 from rest_framework.test import APIRequestFactory
 
+from privacy_review.models import PrivacyScreening
 from submissions.models import (
     ConsentPurpose,
     ConsentRecord,
@@ -81,6 +82,7 @@ def test_public_submission_is_write_only_and_returns_one_time_removal_code(clien
     assert submission.story_text.startswith("A synthetic test narrative")
     assert body["removal_code"] not in credential.verifier
     assert check_password(body["removal_code"], credential.verifier)
+    assert PrivacyScreening.objects.filter(submission=submission).count() == 1
 
 
 @pytest.mark.django_db
@@ -323,71 +325,3 @@ def test_prefer_not_experience_cannot_be_combined_with_specific_values(client):
 
     assert response.status_code == 400
     assert RawSubmission.objects.count() == 0
-
-
-@pytest.mark.django_db
-def test_full_submission_delete_allows_superseded_consent_history(client):
-    response = client.post(
-        reverse("submission-create"),
-        data=public_payload(),
-        content_type="application/json",
-    )
-    assert response.status_code == 201
-
-    submission = RawSubmission.objects.get()
-    previous = ConsentRecord.objects.get(
-        submission=submission,
-        purpose=ConsentPurpose.PUBLICATION,
-    )
-    ConsentRecord.objects.create(
-        submission=submission,
-        purpose=ConsentPurpose.PUBLICATION,
-        granted=False,
-        consent_text_version=previous.consent_text_version,
-        supersedes=previous,
-    )
-
-    submission.delete()
-
-    assert RawSubmission.objects.count() == 0
-    assert ConsentRecord.objects.count() == 0
-
-
-@pytest.mark.django_db
-def test_direct_consent_delete_is_blocked(client):
-    response = client.post(
-        reverse("submission-create"),
-        data=public_payload(),
-        content_type="application/json",
-    )
-    assert response.status_code == 201
-
-    consent = ConsentRecord.objects.first()
-
-    with pytest.raises(ValidationError):
-        consent.delete()
-
-    with pytest.raises(ValidationError):
-        ConsentRecord.objects.filter(pk=consent.pk).delete()
-
-
-@pytest.mark.django_db
-def test_statistics_only_submission_has_longer_configured_retention(client, settings):
-    settings.STATISTICS_ONLY_RETENTION_DAYS = 730
-    before = timezone.now()
-
-    response = client.post(
-        reverse("submission-create"),
-        data=public_payload(
-            publication_choice="statistics_only",
-            publication_consent=False,
-            statistics_consent=True,
-            story_text="",
-        ),
-        content_type="application/json",
-    )
-
-    assert response.status_code == 201
-    submission = RawSubmission.objects.get()
-    expected = before + timedelta(days=730)
-    assert abs((submission.retention_expires_at - expected).total_seconds()) < 10

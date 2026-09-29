@@ -36,6 +36,7 @@ INSTALLED_APPS = [
     "core",
     "staff_accounts",
     "submissions",
+    "privacy_review",
 ]
 
 MIDDLEWARE = [
