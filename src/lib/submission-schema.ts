@@ -62,6 +62,18 @@ export const submissionSchema = z
     consentStatistics: z.boolean(),
   })
   .superRefine((data, ctx) => {
+    if (
+      data.experienceTypes.includes("prefer_not") &&
+      data.experienceTypes.length > 1
+    ) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["experienceTypes"],
+        message:
+          "Prefer not to say can't be combined with specific experience types.",
+      });
+    }
+
     if (data.publicationChoice === "public" && data.storyText.trim() === "") {
       // Attach to publicationChoice (Step 3) — NOT storyText (Step 2) — so the
       // message is visible on the step where the choice is made, and Continue

@@ -1,34 +1,31 @@
 "use client";
 
-import { Flag, CheckCircle2 } from "lucide-react";
+import { CheckCircle2, Flag } from "lucide-react";
 import { useState } from "react";
 import { BottomSheet } from "@/components/ui/bottom-sheet";
 import { Button } from "@/components/ui/button";
 import { RadioGroup } from "@/components/ui/radio-group";
-import { reportStory } from "@/lib/mock-api";
+import { reportStory } from "@/lib/api";
 import type { ReportReason } from "@/types/submission";
 
 const REASONS: { value: ReportReason; label: string }[] = [
-  { value: "identifying_info", label: "Contains identifying information" },
-  { value: "harmful_graphic", label: "Contains harmful or graphic content" },
-  { value: "targets_person", label: "Appears to target a specific person" },
-  { value: "hate_abusive", label: "Hate or abusive content" },
-  { value: "spam", label: "Spam" },
+  { value: "privacy_concern", label: "Contains identifying or private information" },
+  { value: "content_warning", label: "Needs a different content warning" },
+  { value: "harmful_content", label: "Contains harmful content" },
   { value: "other", label: "Other" },
 ];
 
+type Status = "idle" | "sending" | "done" | "error";
+
 export function ReportDialog({ storyId }: { storyId: string }) {
   const [open, setOpen] = useState(false);
-  const [reason, setReason] = useState<string | null>(null);
-  const [note, setNote] = useState("");
-  const [status, setStatus] = useState<"idle" | "sending" | "done">("idle");
+  const [reason, setReason] = useState<ReportReason | null>(null);
+  const [status, setStatus] = useState<Status>("idle");
 
   function close() {
     setOpen(false);
-    // Reset shortly after close so the closing animation stays clean.
     window.setTimeout(() => {
       setReason(null);
-      setNote("");
       setStatus("idle");
     }, 250);
   }
@@ -37,14 +34,10 @@ export function ReportDialog({ storyId }: { storyId: string }) {
     if (!reason) return;
     setStatus("sending");
     try {
-      await reportStory({
-        storyId,
-        reason: reason as ReportReason,
-        note: note.trim() || undefined,
-      });
+      await reportStory({ storyId, reason });
       setStatus("done");
     } catch {
-      setStatus("idle");
+      setStatus("error");
     }
   }
 
@@ -67,8 +60,7 @@ export function ReportDialog({ storyId }: { storyId: string }) {
             </div>
             <p className="mt-4 font-semibold text-ink">Thank you.</p>
             <p className="mx-auto mt-2 max-w-sm text-sm text-ink-soft">
-              Your report has been received and will be reviewed. (In this demo
-              build, nothing is stored.)
+              Your report has been received for human review.
             </p>
             <Button variant="secondary" className="mt-5" onClick={close}>
               Close
@@ -77,8 +69,8 @@ export function ReportDialog({ storyId }: { storyId: string }) {
         ) : (
           <div>
             <p className="text-sm text-ink-soft">
-              Reports go to human moderators. There are no public comments or
-              discussion threads here.
+              Reports go to human moderators. To minimize sensitive data, this
+              form collects only a broad reason and no free-text note.
             </p>
 
             <div className="mt-5">
@@ -89,22 +81,19 @@ export function ReportDialog({ storyId }: { storyId: string }) {
                 name="report-reason"
                 options={REASONS}
                 value={reason}
-                onChange={setReason}
+                onChange={(value) => {
+                  setReason(value as ReportReason);
+                  if (status === "error") setStatus("idle");
+                }}
               />
             </div>
 
-            <label className="mt-5 block">
-              <span className="mb-1.5 block text-sm font-medium text-ink">
-                Anything else? (optional)
-              </span>
-              <textarea
-                value={note}
-                onChange={(e) => setNote(e.target.value)}
-                rows={3}
-                className="w-full rounded-xl border border-line-strong bg-surface p-3 text-sm text-ink focus-visible:border-accent"
-                placeholder="Please avoid including identifying information."
-              />
-            </label>
+            {status === "error" ? (
+              <p className="mt-4 text-sm text-caution" role="alert">
+                We couldn&rsquo;t confirm the report was received. Please try
+                again later.
+              </p>
+            ) : null}
 
             <div className="mt-6 flex justify-end gap-2">
               <Button variant="ghost" onClick={close}>

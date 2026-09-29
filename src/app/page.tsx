@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
-import { getStories } from "@/lib/mock-api";
+import { getStoriesPage } from "@/lib/api";
+import type { Story } from "@/types/story";
 import { StoryCard } from "@/components/stories/StoryCard";
 import { HowItWorks } from "@/components/home/HowItWorks";
 import { FadeIn } from "@/components/ui/motion";
@@ -28,8 +29,15 @@ const PRIVACY_POINTS = [
 
 const FLOW = ["Contribute", "Structure", "Review", "Protect", "Aggregate", "Publish"];
 
+export const dynamic = "force-dynamic";
+
 export default async function HomePage() {
-  const featured = (await getStories({ sort: "featured" })).slice(0, 3);
+  let featured: Story[] = [];
+  try {
+    featured = (await getStoriesPage({ sort: "featured" }, null, 3)).stories;
+  } catch {
+    // The rest of the homepage remains useful if the story service is unavailable.
+  }
 
   return (
     <div className="mx-auto max-w-editorial">
@@ -74,13 +82,20 @@ export default async function HomePage() {
               are comfortable putting into words — sometimes a full account,
               sometimes a single line.
             </p>
-            <ul className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-              {featured.map((story) => (
-                <li key={story.id}>
-                  <StoryCard story={story} />
-                </li>
-              ))}
-            </ul>
+            {featured.length > 0 ? (
+              <ul className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+                {featured.map((story) => (
+                  <li key={story.id}>
+                    <StoryCard story={story} />
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="mt-8 text-ui text-ink-soft">
+                Published stories are temporarily unavailable. You can still
+                read about privacy, safety, and how the platform works below.
+              </p>
+            )}
             <Link
               href="/stories"
               className="mt-8 inline-flex items-center gap-1 text-ui font-medium text-accent hover:text-accent-deep hover:underline"

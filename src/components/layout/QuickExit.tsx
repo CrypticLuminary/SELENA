@@ -3,11 +3,13 @@
 import { LogOut } from "lucide-react";
 import { useEffect } from "react";
 import { cn } from "@/lib/utils";
+import { clearEphemeralSensitiveState } from "@/lib/ephemeral";
 
 /** Where a quick exit sends the visitor — a neutral, unremarkable page. */
 const SAFE_URL = "https://www.google.com/search?q=weather";
 
 function leaveNow() {
+  clearEphemeralSensitiveState();
   try {
     // Replace the current history entry so this page is harder to reach via Back.
     window.location.replace(SAFE_URL);

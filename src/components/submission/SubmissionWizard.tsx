@@ -17,16 +17,19 @@ import type {
   PublicationChoice,
   Submission,
 } from "@/types/submission";
-import { submitStory } from "@/lib/mock-api";
+import { ApiError, submitStory } from "@/lib/api";
+import { SUBMISSION_RECEIPT_KEY } from "@/lib/ephemeral";
 import { Button } from "@/components/ui/button";
 import { Callout } from "@/components/ui/callout";
+import {
+  SubmissionSuccess,
+  type SubmissionSuccessResult,
+} from "./SubmissionSuccess";
 import { WizardProgress } from "./WizardProgress";
 import { Step1About } from "./Step1About";
 import { Step2WhatHappened } from "./Step2WhatHappened";
 import { Step3Sharing } from "./Step3Sharing";
 import { Step4Review } from "./Step4Review";
-
-const RESULT_KEY = "selena_demo_result";
 
 const STEP_TITLES = [
   "Start with what you're comfortable telling us.",
@@ -34,6 +37,8 @@ const STEP_TITLES = [
   "Choose how your contribution is used.",
   "Review before you submit.",
 ];
+
+type SubmitError = "validation" | "rate_limit" | "uncertain" | null;
 
 function toSubmission(v: SubmissionForm): Submission {
   return {
@@ -54,6 +59,9 @@ export function SubmissionWizard() {
   const router = useRouter();
   const [step, setStep] = useState(0);
   const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<SubmitError>(null);
+  const [fallbackReceipt, setFallbackReceipt] =
+    useState<SubmissionSuccessResult | null>(null);
 
   const methods = useForm<SubmissionForm>({
     resolver: zodResolver(submissionSchema),
@@ -63,34 +71,53 @@ export function SubmissionWizard() {
 
   async function goNext() {
     const ok = await methods.trigger(STEP_FIELDS[step]);
-    if (ok) setStep((s) => Math.min(s + 1, 3));
+    if (ok) setStep((current) => Math.min(current + 1, 3));
   }
 
   function goBack() {
-    setStep((s) => Math.max(s - 1, 0));
+    setStep((current) => Math.max(current - 1, 0));
   }
 
   async function onSubmit(data: SubmissionForm) {
     setSubmitting(true);
+    setSubmitError(null);
+
     try {
       const result = await submitStory(toSubmission(data));
+      const receipt: SubmissionSuccessResult = {
+        code: result.removalCode,
+        choice: result.publicationChoice,
+      };
+
       try {
-        // Ephemeral, per-tab only. Not sensitive story content — just the demo
-        // removal code and the chosen path, so the success page can show them.
         sessionStorage.setItem(
-          RESULT_KEY,
-          JSON.stringify({
-            code: result.deletionCode,
-            choice: result.publicationChoice,
-          }),
+          SUBMISSION_RECEIPT_KEY,
+          JSON.stringify(receipt),
         );
+        methods.reset(DEFAULT_SUBMISSION);
+        router.replace("/share/success");
       } catch {
-        /* sessionStorage may be unavailable; success page handles absence */
+        // Never navigate away and lose the only plaintext removal credential.
+        methods.reset(DEFAULT_SUBMISSION);
+        setFallbackReceipt(receipt);
+        setSubmitting(false);
       }
-      router.push("/share/success");
-    } catch {
+    } catch (error) {
       setSubmitting(false);
+      if (error instanceof ApiError && error.status === 400) {
+        setSubmitError("validation");
+      } else if (error instanceof ApiError && error.status === 429) {
+        setSubmitError("rate_limit");
+      } else {
+        // A transport/5xx failure can be ambiguous: the server may have
+        // committed before the response was lost. Do not auto-retry a POST.
+        setSubmitError("uncertain");
+      }
     }
+  }
+
+  if (fallbackReceipt) {
+    return <SubmissionSuccess initialResult={fallbackReceipt} />;
   }
 
   return (
@@ -105,7 +132,11 @@ export function SubmissionWizard() {
         <WizardProgress current={step} />
       </div>
 
-      <form onSubmit={methods.handleSubmit(onSubmit)} className="mt-10" noValidate>
+      <form
+        onSubmit={methods.handleSubmit(onSubmit)}
+        className="mt-10"
+        noValidate
+      >
         <h2 className="mb-7 max-w-xl text-section text-ink">
           {STEP_TITLES[step]}
         </h2>
@@ -115,6 +146,34 @@ export function SubmissionWizard() {
           {step === 2 ? <Step3Sharing /> : null}
           {step === 3 ? <Step4Review /> : null}
         </div>
+
+        {submitError === "validation" ? (
+          <div className="mt-8" role="alert">
+            <Callout tone="caution" title="Please review your answers">
+              The server rejected this submission before storing it. Review the
+              choices above and try again.
+            </Callout>
+          </div>
+        ) : null}
+
+        {submitError === "rate_limit" ? (
+          <div className="mt-8" role="alert">
+            <Callout tone="caution" title="Please wait before trying again">
+              Too many submissions were received from this connection in a
+              short period. Nothing from this attempt was accepted.
+            </Callout>
+          </div>
+        ) : null}
+
+        {submitError === "uncertain" ? (
+          <div className="mt-8" role="alert">
+            <Callout tone="caution" title="We couldn't confirm what happened">
+              We did not retry automatically. The server may have received the
+              submission even though the confirmation was lost. Submitting
+              again could create a second anonymous contribution.
+            </Callout>
+          </div>
+        ) : null}
 
         <div className="mt-10 flex items-center justify-between border-t border-line pt-6">
           {step > 0 ? (

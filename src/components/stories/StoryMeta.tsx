@@ -2,7 +2,7 @@ import { TriangleAlert } from "lucide-react";
 import {
   ageGroupLabel,
   experienceTypeLabel,
-  relationshipLabel,
+  personRelationshipCategoryLabel,
   settingLabel,
   warningLabel,
 } from "@/data/categories";
@@ -38,7 +38,7 @@ export function StoryMeta({
         />
         <MetaItem
           label="Relationship"
-          value={relationshipLabel(story.relationship)}
+          value={personRelationshipCategoryLabel(story.relationship)}
         />
         <MetaItem label="Setting" value={settingLabel(story.setting)} />
       </dl>

@@ -3,12 +3,12 @@
 import { X } from "lucide-react";
 import {
   EXPERIENCE_TYPES,
-  RELATIONSHIPS,
+  PERSON_RELATIONSHIP_CATEGORIES,
   SETTINGS,
 } from "@/data/categories";
 import type {
   ExperienceType,
-  Relationship,
+  PersonRelationshipCategory,
   Setting,
 } from "@/data/categories";
 import type { StoryFilters } from "@/types/story";
@@ -68,11 +68,7 @@ export function StoryControls({
         {hasCategoryFilter ? (
           <button
             type="button"
-            onClick={() =>
-              onChange({
-                sort: filters.sort,
-              })
-            }
+            onClick={() => onChange({ sort: filters.sort })}
             className="inline-flex items-center gap-1 text-sm font-medium text-ink-soft hover:text-ink"
           >
             <X className="h-4 w-4" aria-hidden="true" />
@@ -90,13 +86,18 @@ export function StoryControls({
           <Select
             value={filters.relationship ?? ""}
             onChange={(e) =>
-              set("relationship", (e.target.value || undefined) as Relationship)
+              set(
+                "relationship",
+                (e.target.value || undefined) as PersonRelationshipCategory,
+              )
             }
           >
             <option value="">All relationships</option>
-            {RELATIONSHIPS.filter((r) => r.value !== "prefer_not").map((r) => (
-              <option key={r.value} value={r.value}>
-                {r.label}
+            {PERSON_RELATIONSHIP_CATEGORIES.filter(
+              (item) => item.value !== "prefer_not",
+            ).map((item) => (
+              <option key={item.value} value={item.value}>
+                {item.label}
               </option>
             ))}
           </Select>
@@ -113,11 +114,13 @@ export function StoryControls({
             }
           >
             <option value="">All settings</option>
-            {SETTINGS.filter((s) => s.value !== "prefer_not").map((s) => (
-              <option key={s.value} value={s.value}>
-                {s.label}
-              </option>
-            ))}
+            {SETTINGS.filter((item) => item.value !== "prefer_not").map(
+              (item) => (
+                <option key={item.value} value={item.value}>
+                  {item.label}
+                </option>
+              ),
+            )}
           </Select>
         </label>
 
@@ -135,13 +138,13 @@ export function StoryControls({
             }
           >
             <option value="">All experiences</option>
-            {EXPERIENCE_TYPES.filter((x) => x.value !== "prefer_not").map(
-              (x) => (
-                <option key={x.value} value={x.value}>
-                  {x.label}
-                </option>
-              ),
-            )}
+            {EXPERIENCE_TYPES.filter(
+              (item) => item.value !== "prefer_not",
+            ).map((item) => (
+              <option key={item.value} value={item.value}>
+                {item.label}
+              </option>
+            ))}
           </Select>
         </label>
       </fieldset>

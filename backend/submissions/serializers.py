@@ -173,9 +173,14 @@ class AnonymousSubmissionSerializer(StrictSerializer):
                     {"story_text": "Story text is required for the public-story path."}
                 )
 
-        if choice == PublicationChoice.STATISTICS_ONLY and not attrs["statistics_consent"]:
-            raise serializers.ValidationError(
-                {"statistics_consent": "Explicit statistics consent is required."}
-            )
+        if choice == PublicationChoice.STATISTICS_ONLY:
+            if story.strip():
+                raise serializers.ValidationError(
+                    {"story_text": "Story text is not accepted for the statistics-only path."}
+                )
+            if not attrs["statistics_consent"]:
+                raise serializers.ValidationError(
+                    {"statistics_consent": "Explicit statistics consent is required."}
+                )
 
         return attrs

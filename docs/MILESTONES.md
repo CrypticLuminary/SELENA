@@ -77,12 +77,24 @@
 - [x] final normal read-only Backend CI after temporary migration workflow removal
 
 ## M7 — Frontend/backend integration
-**Status:** Not started
-- [ ] replace mock API incrementally
-- [ ] submission integration
-- [ ] stories integration
-- [ ] error/loading states
-- [ ] E2E tests
+**Status:** Complete on `phase-7-frontend-backend-integration`; awaiting human PR review
+- [x] replace synthetic story/submission/report mocks with validated Django API client
+- [x] remove synthetic public story dataset
+- [x] same-origin browser API proxy + server-only SSR backend routing
+- [x] submission integration with no automatic POST retry
+- [x] statistics-only path omits narrative client-side and rejects it server-side
+- [x] one-time removal-code confirmation handoff + Quick Exit cleanup
+- [x] public story list/detail integration
+- [x] broad public relationship vocabulary only
+- [x] opaque cursor pagination + load-more state
+- [x] content-warning gate preserved
+- [x] report UI aligned to bounded backend reasons with no free-text note
+- [x] loading/error/empty/degraded states
+- [x] runtime validation of public API responses
+- [x] frontend privacy guard updated for real API boundary
+- [x] backend regression test for statistics-only narrative minimization
+- [x] final CI on documented state
+- [ ] browser E2E suite (scheduled for M11 hardening rather than blocking this API-boundary milestone)
 
 ## M8 — Privacy-safe analytics
 **Status:** Not started

@@ -57,7 +57,24 @@ Candidate endpoints:
 Never expose arbitrary database querying.
 
 ## Current frontend boundary
-`src/lib/mock-api.ts` is the intended replacement boundary. Replace mocks progressively with API calls while minimizing changes to UI components.
+
+Phase 7 splits the frontend data boundary deliberately:
+
+- `src/lib/api.ts` — real Django integration for public stories, anonymous
+  submissions, and bounded story reports. Public responses are runtime-validated
+  before components receive them.
+- `src/lib/mock-api.ts` — temporary Phase 8 boundary for synthetic,
+  already-privacy-safe aggregate pattern fixtures only.
+
+The synthetic public-story dataset has been removed.
+
+Browser calls use same-origin `/api/*` paths through the Next.js backend proxy.
+Server-rendered calls use server-only `SELENA_API_BASE_URL` /
+`SELENA_BACKEND_ORIGIN`; backend routing must not use a `NEXT_PUBLIC_*`
+variable.
+
+The anonymous submission client does not automatically retry POST failures
+because a lost response can be ambiguous after a server commit.
 
 ## Logging
 Avoid raw story bodies, removal codes, secrets, authorization headers, and unnecessary identifying metadata.
@@ -134,3 +151,53 @@ Backend CI uses PostgreSQL and runs Ruff lint/format, migration-drift checks,
 Django system checks, migrations, pytest, Python dependency audit, and production
 deployment checks. CI is read-only outside short-lived migration/formatting
 workflows that are removed immediately after validated use.
+
+
+## Implemented frontend/backend integration through Phase 7
+
+### Submission path
+
+```text
+in-memory wizard
+   |
+   +-- public path ----------> story text + explicit publication consent
+   |
+   +-- statistics-only -----> broad structured values only
+                               (story text omitted client-side and rejected server-side)
+   |
+   v
+POST /api/submissions/
+   |
+   v
+one-time removal code response
+   |
+   v
+per-tab confirmation handoff -> immediately cleared after read / Quick Exit
+```
+
+The frontend maps the statistics-only confirmation to
+`statistics_consent=true`; it never treats that choice as publication consent.
+
+### Public story path
+
+The public archive uses the backend's broad top-level relationship vocabulary,
+not private relationship details. Responses are validated with Zod before they
+reach presentation components. Pagination uses the backend UUID cursor and the
+archive loads additional pages explicitly.
+
+The content-warning gate remains in front of full story text.
+
+### Report path
+
+The report UI mirrors the backend's bounded reason vocabulary and collects no
+free-text note. It sends only `{ reason }` to the story report endpoint.
+
+### Failure handling
+
+- public reads have loading/error/empty states;
+- optional related-story failure never hides the requested story;
+- submission POSTs are not automatically retried after ambiguous transport/5xx
+  failures;
+- if session storage is unavailable after a successful submission, the frontend
+  keeps the one-time removal code on the current in-memory confirmation instead
+  of navigating away and losing it.

@@ -49,7 +49,7 @@ export function ConsentBlock() {
   const publishLabel =
     choice === "public"
       ? "I understand my story may be shown publicly after privacy screening and review, and I consent to sharing it anonymously."
-      : "I understand that no story text will be shown, and I consent to my broad answers contributing to anonymous statistics.";
+      : "I understand that my story text will not be sent or shown on this path, and I consent to my broad answers contributing to anonymous statistics.";
 
   return (
     <div className="space-y-3">

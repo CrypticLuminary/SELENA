@@ -24,10 +24,12 @@ for (const file of await walk(src)) {
     violations.push(`${rel}: dangerouslySetInnerHTML is forbidden without an explicit security review.`);
   }
 
-  const importsSensitiveMockData =
-    text.includes("@/data/stories") || text.includes("@/data/patterns");
-  if (importsSensitiveMockData && rel !== "src/lib/mock-api.ts") {
-    violations.push(`${rel}: story/pattern data must be accessed through src/lib/mock-api.ts.`);
+  if (text.includes("@/data/stories")) {
+    violations.push(`${rel}: synthetic public story data is forbidden after Phase 7.`);
+  }
+
+  if (text.includes("@/data/patterns") && rel !== "src/lib/mock-api.ts") {
+    violations.push(`${rel}: temporary pattern fixtures must stay behind src/lib/mock-api.ts.`);
   }
 
   if (text.includes("localStorage") && rel.startsWith("src/")) {
@@ -51,6 +53,12 @@ for (const invariant of [
   }
 }
 
+
+const apiClient = await readFile(join(src, "lib/api.ts"), "utf8");
+if (apiClient.includes("NEXT_PUBLIC_")) {
+  violations.push("src/lib/api.ts: backend routing must use server-only environment variables.");
+}
+
 if (violations.length) {
   console.error("SELENA privacy-boundary check failed:\n");
   for (const violation of violations) console.error(`- ${violation}`);
@@ -58,3 +66,4 @@ if (violations.length) {
 }
 
 console.log("SELENA privacy-boundary check passed.");
+

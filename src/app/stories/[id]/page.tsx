@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, BarChart3 } from "lucide-react";
-import { getStory, getRelatedStories } from "@/lib/mock-api";
-import { relationshipLabel } from "@/data/categories";
+import { getRelatedStories, getStory } from "@/lib/api";
+import type { Story } from "@/types/story";
 import { StoryMeta } from "@/components/stories/StoryMeta";
 import { ContentWarningGate } from "@/components/stories/ContentWarningGate";
 import { ReportDialog } from "@/components/stories/ReportDialog";
@@ -17,12 +17,16 @@ export async function generateMetadata({
   params: StoryParams;
 }): Promise<Metadata> {
   const { id } = await params;
-  const story = await getStory(id);
-  if (!story) return { title: "Story not found" };
-  return {
-    title: story.alias,
-    description: "An anonymous experience shared voluntarily on Selena.",
-  };
+  try {
+    const story = await getStory(id);
+    if (!story) return { title: "Story not found" };
+    return {
+      title: story.alias,
+      description: "An anonymous experience shared voluntarily on Selena.",
+    };
+  } catch {
+    return { title: "Story" };
+  }
 }
 
 export default async function StoryDetailPage({
@@ -34,7 +38,13 @@ export default async function StoryDetailPage({
   const story = await getStory(id);
   if (!story) notFound();
 
-  const related = await getRelatedStories(story);
+  let related: Story[] = [];
+  try {
+    related = await getRelatedStories(story);
+  } catch {
+    // Related content is optional; never hide the requested story if it fails.
+  }
+
   const paragraphs = story.content.split("\n\n").filter(Boolean);
 
   return (
@@ -48,9 +58,7 @@ export default async function StoryDetailPage({
       </Link>
 
       <header className="mt-8">
-        {story.publishedLabel ? (
-          <p className="eyebrow mb-3">{story.publishedLabel}</p>
-        ) : null}
+        <p className="eyebrow mb-3">{story.publishedLabel}</p>
         <h1 className="text-story text-ink">{story.alias}</h1>
         <div className="mt-6">
           <StoryMeta story={story} showExperience />
@@ -61,8 +69,8 @@ export default async function StoryDetailPage({
         <ContentWarningGate warnings={story.warnings}>
           <div className="border-t border-line-strong pt-8">
             <div className="prose-story">
-              {paragraphs.map((p, i) => (
-                <p key={i}>{p}</p>
+              {paragraphs.map((paragraph, index) => (
+                <p key={index}>{paragraph}</p>
               ))}
             </div>
           </div>
@@ -77,11 +85,11 @@ export default async function StoryDetailPage({
 
       <div className="mt-6 flex flex-wrap items-center justify-between gap-4">
         <Link
-          href={`/patterns?relationship=${story.relationship}`}
+          href="/patterns"
           className="inline-flex items-center gap-1.5 text-ui font-medium text-accent hover:text-accent-deep hover:underline"
         >
           <BarChart3 className="h-4 w-4" aria-hidden="true" />
-          Explore {relationshipLabel(story.relationship).toLowerCase()} patterns
+          Explore broader patterns
         </Link>
         <ReportDialog storyId={story.id} />
       </div>

@@ -5,31 +5,71 @@ import { CheckCircle2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { buttonVariants } from "@/components/ui/button";
 import { Callout } from "@/components/ui/callout";
+import {
+  SUBMISSION_RECEIPT_KEY,
+  clearEphemeralSensitiveState,
+} from "@/lib/ephemeral";
+import type { PublicationChoice } from "@/types/submission";
 
-const RESULT_KEY = "selena_demo_result";
-
-interface Result {
+export interface SubmissionSuccessResult {
   code: string;
-  choice: "public" | "statistics_only";
+  choice: PublicationChoice;
 }
 
-export function SubmissionSuccess() {
-  const [result, setResult] = useState<Result | null>(null);
+function parseStoredResult(raw: string): SubmissionSuccessResult | null {
+  try {
+    const value = JSON.parse(raw) as unknown;
+    if (!value || typeof value !== "object") return null;
+
+    const candidate = value as Record<string, unknown>;
+    if (
+      typeof candidate.code !== "string" ||
+      (candidate.choice !== "public" &&
+        candidate.choice !== "statistics_only")
+    ) {
+      return null;
+    }
+
+    return {
+      code: candidate.code,
+      choice: candidate.choice,
+    };
+  } catch {
+    return null;
+  }
+}
+
+export function SubmissionSuccess({
+  initialResult,
+}: {
+  initialResult?: SubmissionSuccessResult;
+}) {
+  const [result, setResult] = useState<SubmissionSuccessResult | null>(
+    initialResult ?? null,
+  );
+  const [checkedStorage, setCheckedStorage] = useState(Boolean(initialResult));
 
   useEffect(() => {
+    if (initialResult) return;
+
     try {
-      const raw = sessionStorage.getItem(RESULT_KEY);
+      const raw = sessionStorage.getItem(SUBMISSION_RECEIPT_KEY);
       if (raw) {
-        // This one-time effect intentionally synchronizes React with ephemeral
-        // browser storage used only by the synthetic demo confirmation flow.
-        // eslint-disable-next-line react-hooks/set-state-in-effect
-        setResult(JSON.parse(raw) as Result);
-        sessionStorage.removeItem(RESULT_KEY);
+        setResult(parseStoredResult(raw));
       }
-    } catch {
-      /* storage unavailable — show the generic confirmation */
+    } finally {
+      clearEphemeralSensitiveState();
+      setCheckedStorage(true);
     }
-  }, []);
+  }, [initialResult]);
+
+  if (!checkedStorage) {
+    return (
+      <div className="mx-auto max-w-reading py-6 text-center">
+        <p className="text-ui text-ink-soft">Loading your confirmation…</p>
+      </div>
+    );
+  }
 
   return (
     <div className="mx-auto max-w-reading py-6 text-center">
@@ -37,15 +77,22 @@ export function SubmissionSuccess() {
         <CheckCircle2 className="h-7 w-7 text-accent" aria-hidden="true" />
       </div>
 
-      <h1 className="mt-6 text-title text-ink">Thank you for sharing.</h1>
-      <p className="mt-4 text-lede text-ink-soft">
-        Your contribution has been received.
-        {result?.choice === "public"
-          ? " If you chose to share your story, it will be screened for privacy and reviewed before it could appear."
-          : result?.choice === "statistics_only"
-            ? " Your broad answers may help shape the patterns others can explore."
-            : ""}
-      </p>
+      <h1 className="mt-6 text-title text-ink">
+        {result ? "Thank you for sharing." : "Submission confirmation"}
+      </h1>
+
+      {result ? (
+        <p className="mt-4 text-lede text-ink-soft">
+          Your contribution has been received.
+          {result.choice === "public"
+            ? " It will be screened for privacy and reviewed before it could appear publicly."
+            : " Your broad answers may help shape privacy-protected patterns."}
+        </p>
+      ) : (
+        <p className="mt-4 text-lede text-ink-soft">
+          This page does not have a one-time receipt to display.
+        </p>
+      )}
 
       {result?.code ? (
         <div className="mt-8 rounded-2xl border border-line bg-surface p-6 text-left">
@@ -60,16 +107,17 @@ export function SubmissionSuccess() {
             later. No account is needed to use it.
           </p>
           <p className="mt-2 text-xs text-ink-faint">
-            Demo note: this is an illustrative code. This version does not store
-            submissions or operate real deletion infrastructure.
+            For privacy, Selena does not keep a recoverable plaintext copy of
+            this code and this page will not show it again after you leave or
+            refresh.
           </p>
         </div>
       ) : (
         <div className="mt-8">
-          <Callout tone="info">
-            In this demo build, nothing is stored. In a full version you would
-            receive an anonymous removal code here so you could request removal
-            later without an account.
+          <Callout tone="caution">
+            If you previously submitted and did not save the one-time removal
+            code, this page cannot recover it. Avoid putting a removal code into
+            support messages or report forms.
           </Callout>
         </div>
       )}
